@@ -9,6 +9,186 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      goals: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          progress: number | null
+          start_date: string | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          progress?: number | null
+          start_date?: string | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          progress?: number | null
+          start_date?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habit_logs: {
+        Row: {
+          completed_at: string | null
+          count: number
+          habit_id: string
+          id: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          count?: number
+          habit_id: string
+          id?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          count?: number
+          habit_id?: string
+          id?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_logs_habit_id_fkey"
+            columns: ["habit_id"]
+            isOneToOne: false
+            referencedRelation: "habits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "habit_logs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habits: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          frequency: string
+          icon: string | null
+          id: string
+          name: string
+          streak: number
+          target_count: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          frequency?: string
+          icon?: string | null
+          id?: string
+          name: string
+          streak?: number
+          target_count?: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          frequency?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          streak?: number
+          target_count?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      milestones: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          due_date: string | null
+          goal_id: string
+          id: string
+          is_completed: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          goal_id: string
+          id?: string
+          is_completed?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          due_date?: string | null
+          goal_id?: string
+          id?: string
+          is_completed?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           amount: number | null

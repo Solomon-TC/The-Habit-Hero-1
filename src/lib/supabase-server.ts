@@ -1,7 +1,9 @@
+// Server-side Supabase client (only use in App Router Server Components)
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-export const createClient = async () => {
+// This file should only be imported in App Router Server Components
+export const createServerSupabaseClient = async () => {
   const cookieStore = await cookies();
 
   return createServerClient(

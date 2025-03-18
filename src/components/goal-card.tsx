@@ -1,0 +1,276 @@
+"use client";
+
+import * as React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser-client";
+import { Goal, Milestone } from "@/types/goal";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import {
+  Pencil,
+  Trash2,
+  Plus,
+  CheckCircle,
+  Circle,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+
+interface GoalCardProps {
+  goal: Goal;
+  onDelete?: () => void;
+}
+
+export default function GoalCard({ goal, onDelete }: GoalCardProps) {
+  const router = useRouter();
+  const supabase = createBrowserSupabaseClient();
+  const [showMilestones, setShowMilestones] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [milestones, setMilestones] = useState<Milestone[]>(
+    goal.milestones || [],
+  );
+  const [goalProgress, setGoalProgress] = useState(goal.progress);
+
+  const handleDelete = async () => {
+    if (
+      confirm(
+        "Are you sure you want to delete this goal? This action cannot be undone.",
+      )
+    ) {
+      setIsDeleting(true);
+
+      const { error } = await supabase.from("goals").delete().eq("id", goal.id);
+
+      if (error) {
+        console.error("Error deleting goal:", error);
+        alert("Failed to delete goal. Please try again.");
+        setIsDeleting(false);
+        return;
+      }
+
+      if (onDelete) {
+        onDelete();
+      } else {
+        router.refresh();
+      }
+    }
+  };
+
+  const toggleMilestoneCompletion = async (milestone: Milestone) => {
+    const newStatus = !milestone.is_completed;
+
+    const { error } = await supabase
+      .from("milestones")
+      .update({
+        is_completed: newStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", milestone.id);
+
+    if (error) {
+      console.error("Error updating milestone:", error);
+      return;
+    }
+
+    // Update local state
+    const updatedMilestones = milestones.map((m) =>
+      m.id === milestone.id ? { ...m, is_completed: newStatus } : m,
+    );
+    setMilestones(updatedMilestones);
+
+    // Calculate progress locally
+    const completedCount = updatedMilestones.filter(
+      (m) => m.is_completed,
+    ).length;
+    const newProgress = Math.round(
+      (completedCount / updatedMilestones.length) * 100,
+    );
+    setGoalProgress(newProgress);
+
+    // Update goal progress in database
+    const { error: progressError } = await supabase
+      .from("goals")
+      .update({
+        progress: newProgress,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", goal.id);
+
+    if (progressError) {
+      console.error("Error updating goal progress:", progressError);
+    }
+
+    router.refresh();
+  };
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return "Not set";
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const getCategoryColor = (category: string | null) => {
+    const colors: Record<string, string> = {
+      Health: "bg-green-100 text-green-800",
+      Fitness: "bg-blue-100 text-blue-800",
+      Learning: "bg-indigo-100 text-indigo-800",
+      Career: "bg-yellow-100 text-yellow-800",
+      Finance: "bg-emerald-100 text-emerald-800",
+      Personal: "bg-purple-100 text-purple-800",
+      Relationships: "bg-pink-100 text-pink-800",
+      Wellness: "bg-teal-100 text-teal-800",
+      Other: "bg-gray-100 text-gray-800",
+    };
+
+    return colors[category || "Other"] || colors.Other;
+  };
+
+  return (
+    <Card className="overflow-hidden border-2 hover:border-purple-200 transition-all">
+      <CardHeader className="pb-2 bg-purple-50">
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle>{goal.title}</CardTitle>
+            <CardDescription>{goal.description}</CardDescription>
+          </div>
+          <div
+            className={`text-xs font-medium px-2.5 py-0.5 rounded ${getCategoryColor(goal.category)}`}
+          >
+            {goal.category || "Other"}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-4">
+        <div className="flex justify-between text-sm mb-1">
+          <span>Progress</span>
+          <span>{goalProgress}%</span>
+        </div>
+        <Progress value={goalProgress} className="h-2 bg-gray-200" />
+        <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+          <div>
+            <p className="text-gray-500">Start Date</p>
+            <p>{formatDate(goal.start_date)}</p>
+          </div>
+          <div>
+            <p className="text-gray-500">Target Date</p>
+            <p>{formatDate(goal.end_date)}</p>
+          </div>
+        </div>
+
+        {/* Milestones section */}
+        <div className="mt-4">
+          <Button
+            variant="ghost"
+            className="w-full flex justify-between items-center p-2 text-sm"
+            onClick={() => setShowMilestones(!showMilestones)}
+          >
+            <span>Milestones ({milestones.length})</span>
+            {showMilestones ? (
+              <ChevronUp size={16} />
+            ) : (
+              <ChevronDown size={16} />
+            )}
+          </Button>
+
+          {showMilestones && (
+            <div className="mt-2 space-y-2">
+              {milestones.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">
+                  No milestones yet. Add one to track your progress.
+                </p>
+              ) : (
+                milestones.map((milestone) => (
+                  <div
+                    key={milestone.id}
+                    className="flex items-start gap-2 p-2 rounded-md hover:bg-gray-50"
+                  >
+                    <button
+                      onClick={() => toggleMilestoneCompletion(milestone)}
+                      className="mt-0.5 flex-shrink-0"
+                    >
+                      {milestone.is_completed ? (
+                        <CheckCircle size={18} className="text-green-600" />
+                      ) : (
+                        <Circle size={18} className="text-gray-400" />
+                      )}
+                    </button>
+                    <div className="flex-1">
+                      <p
+                        className={`text-sm font-medium ${milestone.is_completed ? "line-through text-gray-500" : ""}`}
+                      >
+                        {milestone.title}
+                      </p>
+                      {milestone.description && (
+                        <p className="text-xs text-gray-600">
+                          {milestone.description}
+                        </p>
+                      )}
+                      {milestone.due_date && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          Due: {formatDate(milestone.due_date)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full mt-2 text-purple-600 border-purple-200 hover:bg-purple-50"
+                onClick={() =>
+                  router.push(
+                    `/dashboard/goals/milestones/new?goalId=${goal.id}`,
+                  )
+                }
+              >
+                <Plus size={16} className="mr-1" />
+                Add Milestone
+              </Button>
+            </div>
+          )}
+        </div>
+      </CardContent>
+      <CardFooter className="flex justify-between pt-2 border-t">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/dashboard/goals/edit?id=${goal.id}`)}
+          >
+            <Pencil size={16} className="mr-1" />
+            Edit
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-red-600 hover:bg-red-50"
+            onClick={handleDelete}
+            disabled={isDeleting}
+          >
+            <Trash2 size={16} className="mr-1" />
+            {isDeleting ? "Deleting..." : "Delete"}
+          </Button>
+        </div>
+        <Button
+          className="bg-purple-600 hover:bg-purple-700"
+          size="sm"
+          onClick={() =>
+            router.push(`/dashboard/goals/milestones/new?goalId=${goal.id}`)
+          }
+        >
+          <Plus size={16} className="mr-1" />
+          Add Milestone
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
