@@ -9,6 +9,84 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      friend_requests: {
+        Row: {
+          created_at: string | null
+          id: string
+          receiver_id: string
+          sender_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          receiver_id: string
+          sender_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friend_requests_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friend_requests_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      friends: {
+        Row: {
+          created_at: string | null
+          friend_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          friend_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          friend_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "friends_friend_id_fkey"
+            columns: ["friend_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "friends_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goals: {
         Row: {
           category: string | null
@@ -355,7 +433,109 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      gtrgm_compress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: {
+          "": unknown
+        }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: {
+          "": unknown
+        }
+        Returns: unknown
+      }
+      search_user_by_id: {
+        Args: {
+          user_id_query: string
+        }
+        Returns: {
+          avatar_url: string | null
+          created_at: string
+          credits: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          image: string | null
+          name: string | null
+          subscription: string | null
+          token_identifier: string
+          updated_at: string | null
+          user_id: string | null
+        }[]
+      }
+      search_users_by_email: {
+        Args: {
+          search_query: string
+        }
+        Returns: {
+          avatar_url: string | null
+          created_at: string
+          credits: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          image: string | null
+          name: string | null
+          subscription: string | null
+          token_identifier: string
+          updated_at: string | null
+          user_id: string | null
+        }[]
+      }
+      set_limit: {
+        Args: {
+          "": number
+        }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: {
+          "": string
+        }
+        Returns: string[]
+      }
+      simple_user_search: {
+        Args: {
+          search_query: string
+        }
+        Returns: {
+          avatar_url: string | null
+          created_at: string
+          credits: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          image: string | null
+          name: string | null
+          subscription: string | null
+          token_identifier: string
+          updated_at: string | null
+          user_id: string | null
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

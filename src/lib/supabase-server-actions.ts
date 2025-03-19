@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 
 // This file should only be imported in App Router Server Components or Server Actions
 export const createServerSupabaseClient = async () => {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

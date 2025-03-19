@@ -6,6 +6,15 @@ const nextConfig = {
   },
   // Ensure SWC is used for compilation
   swcMinify: true,
+  // Disable webpack persistent caching to prevent file system errors
+  webpack: (config, { dev }) => {
+    if (dev) {
+      config.cache = {
+        type: "memory",
+      };
+    }
+    return config;
+  },
 };
 
 // Configure experimental features
