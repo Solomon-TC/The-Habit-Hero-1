@@ -62,9 +62,27 @@ export async function getGoalById(goalId: string) {
   };
 }
 
+import { awardXP } from "./xp";
+
 export async function updateGoalProgress(goalId: string, progress: number) {
   const supabase = await createServerSupabaseClient();
 
+  // Get the goal to check if it's completed
+  const { data: goal, error: goalError } = await supabase
+    .from("goals")
+    .select("*")
+    .eq("id", goalId)
+    .single();
+
+  if (goalError) {
+    console.error("Error fetching goal:", goalError);
+    return { error: goalError };
+  }
+
+  const wasCompleted = goal.progress === 100;
+  const isNowCompleted = progress === 100;
+
+  // Update the goal progress
   const { data, error } = await supabase
     .from("goals")
     .update({ progress, updated_at: new Date().toISOString() })
@@ -75,6 +93,19 @@ export async function updateGoalProgress(goalId: string, progress: number) {
   if (error) {
     console.error("Error updating goal progress:", error);
     return { error };
+  }
+
+  // Award XP if the goal is newly completed
+  if (!wasCompleted && isNowCompleted) {
+    const xpValue = goal.xp_value || 50; // Default to 50 XP if not set
+    const xpResult = await awardXP(goal.user_id, xpValue, "goal", goalId);
+
+    if (xpResult.leveledUp) {
+      // Could trigger a notification or animation here
+      console.log(
+        `User leveled up from ${xpResult.oldLevel} to ${xpResult.newLevel}!`,
+      );
+    }
   }
 
   return { data };

@@ -1,314 +1,490 @@
+"use client";
+
 import { createServerSupabaseClient } from "./supabase-server-actions";
-import { createClient } from "@/supabase/server";
+import { createBrowserSupabaseClient } from "./supabase-browser";
 
-export async function searchUsers(query: string) {
-  const supabase = await createServerSupabaseClient();
+// Create a stable client reference for consistent hydration
+let cachedSupabaseClient: any = null;
 
-  const { data: currentUser } = await supabase.auth.getUser();
-  if (!currentUser.user) return { users: [] };
-
-  query = query.trim();
-  console.log("[lib/friends] Search query:", query);
-
-  // Try the simplified search function first
-  try {
-    const { data: searchResults, error } = await supabase.rpc(
-      "simple_user_search",
-      { search_query: query },
-    );
-
-    if (!error && searchResults && searchResults.length > 0) {
-      console.log(
-        "[lib/friends] Simple search successful:",
-        searchResults.length,
-      );
-
-      // Filter out current user
-      const filteredResults = searchResults.filter(
-        (user) => user && user.id !== currentUser.user.id,
-      );
-
-      console.log(
-        "[lib/friends] Final search results:",
-        filteredResults.length,
-      );
-      return { users: filteredResults || [] };
-    }
-  } catch (error) {
-    console.error("[lib/friends] Error in simple search:", error);
+async function getStableSupabaseClient() {
+  // Always create a fresh client on the server to avoid hydration issues
+  if (typeof window === "undefined") {
+    return await createServerSupabaseClient();
   }
 
-  // Fallback: Get all users
+  // Client-side: Reuse the client to ensure stable references
+  if (!cachedSupabaseClient) {
+    cachedSupabaseClient = createBrowserSupabaseClient();
+  }
+  return cachedSupabaseClient;
+}
+
+export async function searchUsers(query: string) {
+  // Return empty results during SSR to prevent hydration mismatches
+  if (typeof window === "undefined") {
+    return { users: [] };
+  }
+
+  const supabase = await getStableSupabaseClient();
+  if (!supabase) return { users: [] };
+
   try {
-    const { data: allUsers } = await supabase
-      .from("users")
-      .select("id, name, email, avatar_url")
-      .limit(50);
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser?.user) return { users: [] };
 
-    if (allUsers && allUsers.length > 0) {
-      console.log("[lib/friends] Fallback to all users:", allUsers.length);
+    query = query.trim();
+    console.log("[lib/friends] Search query:", query);
 
-      // Filter out current user
-      const filteredResults = allUsers.filter(
-        (user) => user && user.id !== currentUser.user.id,
+    // Create a Set to track unique user IDs across all search methods
+    const uniqueUserIds = new Set<string>();
+    const uniqueUsers: any[] = [];
+
+    // Helper function to add unique users to our results
+    const addUniqueUsers = (users: any[]) => {
+      if (!users || users.length === 0) return;
+
+      users.forEach((user) => {
+        if (
+          user &&
+          user.id !== currentUser.user.id &&
+          !uniqueUserIds.has(user.id)
+        ) {
+          uniqueUserIds.add(user.id);
+          uniqueUsers.push(user);
+        }
+      });
+    };
+
+    // Try the simplified search function first
+    try {
+      const { data: searchResults, error } = await supabase.rpc(
+        "simple_user_search",
+        { search_query: query },
       );
 
-      console.log(
-        "[lib/friends] Final search results:",
-        filteredResults.length,
-      );
-      return { users: filteredResults || [] };
+      if (!error && searchResults && searchResults.length > 0) {
+        console.log(
+          "[lib/friends] Simple search successful:",
+          searchResults.length,
+        );
+
+        addUniqueUsers(searchResults);
+
+        console.log("[lib/friends] Final search results:", uniqueUsers.length);
+
+        if (uniqueUsers.length > 0) {
+          return { users: uniqueUsers };
+        }
+      }
+    } catch (error) {
+      console.error("[lib/friends] Error in simple search:", error);
     }
-  } catch (error) {
-    console.error("[lib/friends] Error fetching all users:", error);
+
+    // Fallback: Get all users
+    try {
+      const { data: allUsers } = await supabase
+        .from("users")
+        .select("id, name, email, avatar_url")
+        .limit(50);
+
+      if (allUsers && allUsers.length > 0) {
+        console.log("[lib/friends] Fallback to all users:", allUsers.length);
+
+        addUniqueUsers(allUsers);
+
+        console.log("[lib/friends] Final search results:", uniqueUsers.length);
+
+        return { users: uniqueUsers };
+      }
+    } catch (error) {
+      console.error("[lib/friends] Error fetching all users:", error);
+    }
+  } catch (e) {
+    console.error("[lib/friends] Exception in searchUsers:", e);
   }
 
   return { users: [] };
 }
 
 export async function sendFriendRequest(receiverId: string) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await getStableSupabaseClient();
+  if (!supabase)
+    return { success: false, error: "Failed to initialize Supabase client" };
 
-  const { data: currentUser } = await supabase.auth.getUser();
-  if (!currentUser.user) return { success: false, error: "Not authenticated" };
+  try {
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser?.user)
+      return { success: false, error: "Not authenticated" };
 
-  // Check if a request already exists
-  const { data: existingRequest } = await supabase
-    .from("friend_requests")
-    .select("*")
-    .or(
-      `and(sender_id.eq.${currentUser.user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUser.user.id})`,
-    )
-    .maybeSingle();
+    // Check if a request already exists
+    const { data: existingRequest } = await supabase
+      .from("friend_requests")
+      .select("*")
+      .or(
+        `and(sender_id.eq.${currentUser.user.id},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${currentUser.user.id})`,
+      )
+      .maybeSingle();
 
-  if (existingRequest) {
-    return {
-      success: false,
-      error: "A friend request already exists between these users",
-    };
+    if (existingRequest) {
+      return {
+        success: false,
+        error: "A friend request already exists between these users",
+      };
+    }
+
+    // Check if they're already friends
+    const { data: existingFriendship } = await supabase
+      .from("friends")
+      .select("*")
+      .or(
+        `and(user_id.eq.${currentUser.user.id},friend_id.eq.${receiverId}),and(user_id.eq.${receiverId},friend_id.eq.${currentUser.user.id})`,
+      )
+      .maybeSingle();
+
+    if (existingFriendship) {
+      return { success: false, error: "These users are already friends" };
+    }
+
+    // Create the friend request
+    const { error } = await supabase.from("friend_requests").insert({
+      sender_id: currentUser.user.id,
+      receiver_id: receiverId,
+      status: "pending",
+    });
+
+    if (error) {
+      console.error("Error sending friend request:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (e) {
+    console.error("[lib/friends] Exception in sendFriendRequest:", e);
+    return { success: false, error: "An unexpected error occurred" };
   }
-
-  // Check if they're already friends
-  const { data: existingFriendship } = await supabase
-    .from("friends")
-    .select("*")
-    .or(
-      `and(user_id.eq.${currentUser.user.id},friend_id.eq.${receiverId}),and(user_id.eq.${receiverId},friend_id.eq.${currentUser.user.id})`,
-    )
-    .maybeSingle();
-
-  if (existingFriendship) {
-    return { success: false, error: "These users are already friends" };
-  }
-
-  // Create the friend request
-  const { error } = await supabase.from("friend_requests").insert({
-    sender_id: currentUser.user.id,
-    receiver_id: receiverId,
-    status: "pending",
-  });
-
-  if (error) {
-    console.error("Error sending friend request:", error);
-    return { success: false, error: error.message };
-  }
-
-  return { success: true };
 }
 
 export async function respondToFriendRequest(
   requestId: string,
   accept: boolean,
 ) {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await getStableSupabaseClient();
+  if (!supabase)
+    return { success: false, error: "Failed to initialize Supabase client" };
 
-  const { data: currentUser } = await supabase.auth.getUser();
-  if (!currentUser.user) return { success: false, error: "Not authenticated" };
-
-  console.log(
-    "[lib/friends] Responding to friend request:",
-    requestId,
-    "accept:",
-    accept,
-  );
-
-  // Get the request
-  const { data: request } = await supabase
-    .from("friend_requests")
-    .select("*")
-    .eq("id", requestId)
-    .eq("receiver_id", currentUser.user.id)
-    .single();
-
-  if (!request) {
-    console.error("[lib/friends] Friend request not found:", requestId);
-    return { success: false, error: "Friend request not found" };
-  }
-
-  console.log("[lib/friends] Found request:", request);
-
-  if (accept) {
-    // Start a transaction to update the request and create friendship
-    const { error: updateError } = await supabase
-      .from("friend_requests")
-      .update({ status: "accepted" })
-      .eq("id", requestId);
-
-    if (updateError) {
-      console.error(
-        "[lib/friends] Error updating friend request:",
-        updateError,
-      );
-      return { success: false, error: updateError.message };
-    }
+  try {
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser?.user)
+      return { success: false, error: "Not authenticated" };
 
     console.log(
-      "[lib/friends] Creating friendship between",
-      currentUser.user.id,
-      "and",
-      request.sender_id,
+      "[lib/friends] Responding to friend request:",
+      requestId,
+      "accept:",
+      accept,
     );
 
-    // Create two friendship records (one for each user)
-    const { data: friendshipData, error: friendshipError } = await supabase
-      .from("friends")
-      .insert([
-        { user_id: currentUser.user.id, friend_id: request.sender_id },
-        { user_id: request.sender_id, friend_id: currentUser.user.id },
-      ])
-      .select();
-
-    if (friendshipError) {
-      console.error(
-        "[lib/friends] Error creating friendship:",
-        friendshipError,
-      );
-      return { success: false, error: friendshipError.message };
-    }
-
-    console.log(
-      "[lib/friends] Friendship created successfully:",
-      friendshipData,
-    );
-  } else {
-    // Reject the request
-    const { error } = await supabase
+    // Get the request
+    const { data: request, error: requestError } = await supabase
       .from("friend_requests")
-      .update({ status: "rejected" })
-      .eq("id", requestId);
+      .select("*")
+      .eq("id", requestId)
+      .eq("receiver_id", currentUser.user.id)
+      .single();
 
-    if (error) {
-      console.error("[lib/friends] Error rejecting friend request:", error);
-      return { success: false, error: error.message };
+    if (requestError || !request) {
+      console.error(
+        "[lib/friends] Friend request not found:",
+        requestId,
+        requestError,
+      );
+      return { success: false, error: "Friend request not found" };
     }
-  }
 
-  return { success: true };
+    // Prevent self-referential friendships
+    if (request.sender_id === currentUser.user.id) {
+      console.error("[lib/friends] Cannot accept request from self");
+      return { success: false, error: "Cannot accept request from self" };
+    }
+
+    console.log("[lib/friends] Found request:", request);
+
+    if (accept) {
+      // Start a transaction to update the request and create friendship
+      const { error: updateError } = await supabase
+        .from("friend_requests")
+        .update({ status: "accepted" })
+        .eq("id", requestId);
+
+      if (updateError) {
+        console.error(
+          "[lib/friends] Error updating friend request:",
+          updateError,
+        );
+        return { success: false, error: updateError.message };
+      }
+
+      console.log(
+        "[lib/friends] Creating friendship between",
+        currentUser.user.id,
+        "and",
+        request.sender_id,
+      );
+
+      // Check if friendship already exists to avoid duplicates
+      const { data: existingFriendship, error: checkError } = await supabase
+        .from("friends")
+        .select("*")
+        .or(
+          `and(user_id.eq.${currentUser.user.id},friend_id.eq.${request.sender_id}),and(user_id.eq.${request.sender_id},friend_id.eq.${currentUser.user.id})`,
+        )
+        .maybeSingle();
+
+      if (checkError) {
+        console.error(
+          "[lib/friends] Error checking existing friendship:",
+          checkError,
+        );
+      }
+
+      if (existingFriendship) {
+        console.log(
+          "[lib/friends] Friendship already exists:",
+          existingFriendship,
+        );
+      } else {
+        try {
+          // First record: current user -> friend
+          const { error: error1 } = await supabase.from("friends").insert({
+            user_id: currentUser.user.id,
+            friend_id: request.sender_id,
+            created_at: new Date().toISOString(),
+          });
+
+          if (error1) {
+            console.error(
+              "[lib/friends] Error creating first friendship record:",
+              error1,
+            );
+          } else {
+            console.log(
+              "[lib/friends] First friendship record created successfully",
+            );
+          }
+
+          // Second record: friend -> current user
+          const { error: error2 } = await supabase.from("friends").insert({
+            user_id: request.sender_id,
+            friend_id: currentUser.user.id,
+            created_at: new Date().toISOString(),
+          });
+
+          if (error2) {
+            console.error(
+              "[lib/friends] Error creating second friendship record:",
+              error2,
+            );
+          } else {
+            console.log(
+              "[lib/friends] Second friendship record created successfully",
+            );
+          }
+
+          if (error1 && error2) {
+            return {
+              success: false,
+              error: "Failed to create friendship records",
+            };
+          }
+        } catch (e) {
+          console.error(
+            "[lib/friends] Exception creating friendship records:",
+            e,
+          );
+          return {
+            success: false,
+            error: "Exception creating friendship records",
+          };
+        }
+      }
+    } else {
+      // Reject the request
+      const { error } = await supabase
+        .from("friend_requests")
+        .update({ status: "rejected" })
+        .eq("id", requestId);
+
+      if (error) {
+        console.error("[lib/friends] Error rejecting friend request:", error);
+        return { success: false, error: error.message };
+      }
+    }
+
+    return { success: true };
+  } catch (e) {
+    console.error("[lib/friends] Exception in respondToFriendRequest:", e);
+    return { success: false, error: "An unexpected error occurred" };
+  }
 }
 
 export async function getFriends() {
-  const supabase = await createServerSupabaseClient();
-
-  const { data: currentUser } = await supabase.auth.getUser();
-  if (!currentUser.user) return { friends: [] };
-
-  console.log("[lib/friends] Getting friends for user:", currentUser.user.id);
-
-  // Let's check the friends table directly to see what's there
-  const { data: allFriendships, error: allFriendshipsError } = await supabase
-    .from("friends")
-    .select("*");
-
-  console.log("[lib/friends] All friendships in table:", allFriendships);
-
-  if (allFriendshipsError) {
-    console.error(
-      "[lib/friends] Error checking all friendships:",
-      allFriendshipsError,
-    );
-  }
-
-  const { data: friendConnections, error } = await supabase
-    .from("friends")
-    .select("friend_id")
-    .eq("user_id", currentUser.user.id);
-
-  if (error) {
-    console.error("[lib/friends] Error fetching friend connections:", error);
+  // Return empty results during SSR to prevent hydration mismatches
+  if (typeof window === "undefined") {
     return { friends: [] };
   }
 
-  console.log(
-    "[lib/friends] Friend connections for current user:",
-    friendConnections,
-  );
+  try {
+    const supabase = await getStableSupabaseClient();
+    if (!supabase) {
+      console.error("[lib/friends] Failed to initialize Supabase client");
+      return { friends: [] };
+    }
 
-  if (!friendConnections || friendConnections.length === 0) {
-    console.log("[lib/friends] No friend connections found");
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser?.user) {
+      console.log("[lib/friends] No authenticated user found");
+      return { friends: [] };
+    }
+
+    console.log("[lib/friends] Getting friends for user:", currentUser.user.id);
+
+    // Direct query to get all friendships for the current user
+    const { data: friendships, error: friendshipsError } = await supabase
+      .from("friends")
+      .select("*")
+      .eq("user_id", currentUser.user.id);
+
+    if (friendshipsError) {
+      console.error(
+        "[lib/friends] Error fetching friendships:",
+        friendshipsError,
+      );
+      return { friends: [] };
+    }
+
+    console.log("[lib/friends] Found friendships:", friendships?.length || 0);
+
+    if (!friendships || friendships.length === 0) {
+      return { friends: [] };
+    }
+
+    // Extract friend IDs
+    const friendIds = friendships.map((f) => f.friend_id);
+    console.log("[lib/friends] Friend IDs:", friendIds);
+
+    // If we have friend IDs but no corresponding users, create placeholder users
+    try {
+      await supabase.rpc("ensure_friend_users_exist");
+    } catch (error) {
+      console.error("[lib/friends] Error ensuring friend users exist:", error);
+      // Continue anyway, as the function might not exist in all environments
+    }
+
+    // Get friend user details
+    const { data: friends, error: friendsError } = await supabase
+      .from("users")
+      .select("id, name, email, avatar_url, created_at")
+      .in("id", friendIds);
+
+    console.log("[lib/friends] Friend IDs for query:", friendIds);
+    console.log("[lib/friends] Raw friends query result:", friends);
+
+    if (friendsError) {
+      console.error(
+        "[lib/friends] Error fetching friend details:",
+        friendsError,
+      );
+      return { friends: [] };
+    }
+
+    // If we still don't have friends data, create placeholder objects
+    if (!friends || friends.length === 0) {
+      console.log("[lib/friends] Creating placeholder friend objects");
+      const placeholderFriends = friendships.map((f) => ({
+        id: f.friend_id,
+        name: `User ${f.friend_id.substring(0, 8)}`,
+        email: `user_${f.friend_id.substring(0, 8)}@example.com`,
+        avatar_url: null,
+        created_at: f.created_at,
+      }));
+      console.log(
+        "[lib/friends] Placeholder friends:",
+        placeholderFriends.length,
+      );
+      return { friends: placeholderFriends };
+    }
+
+    console.log("[lib/friends] Found friend details:", friends.length);
+    return { friends: friends };
+  } catch (e) {
+    console.error("[lib/friends] Exception in getFriends:", e);
     return { friends: [] };
   }
-
-  const friendIds = friendConnections.map((f) => f.friend_id);
-  console.log("[lib/friends] Friend IDs:", friendIds);
-
-  const { data: friends, error: friendsError } = await supabase
-    .from("users")
-    .select("id, name, email, avatar_url, created_at")
-    .in("id", friendIds);
-
-  if (friendsError) {
-    console.error("[lib/friends] Error fetching friends:", friendsError);
-    return { friends: [] };
-  }
-
-  console.log("[lib/friends] Found friends:", friends?.length || 0);
-  return { friends: friends || [] };
 }
 
 export async function getPendingFriendRequests() {
-  const supabase = await createServerSupabaseClient();
-
-  const { data: currentUser } = await supabase.auth.getUser();
-  if (!currentUser.user) return { requests: [] };
-
-  const { data: requests, error } = await supabase
-    .from("friend_requests")
-    .select(
-      `
-      id,
-      created_at,
-      sender:sender_id(id, name, email, avatar_url)
-    `,
-    )
-    .eq("receiver_id", currentUser.user.id)
-    .eq("status", "pending");
-
-  if (error) {
-    console.error("Error fetching friend requests:", error);
+  // Return empty results during SSR to prevent hydration mismatches
+  if (typeof window === "undefined") {
     return { requests: [] };
   }
 
-  return { requests };
+  try {
+    const supabase = await getStableSupabaseClient();
+    if (!supabase) return { requests: [] };
+
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser?.user) return { requests: [] };
+
+    const { data: requests, error } = await supabase
+      .from("friend_requests")
+      .select(
+        `
+        id,
+        created_at,
+        sender:sender_id(id, name, email, avatar_url)
+      `,
+      )
+      .eq("receiver_id", currentUser.user.id)
+      .eq("status", "pending");
+
+    if (error) {
+      console.error("Error fetching friend requests:", error);
+      return { requests: [] };
+    }
+
+    return { requests: requests || [] };
+  } catch (e) {
+    console.error("[lib/friends] Exception in getPendingFriendRequests:", e);
+    return { requests: [] };
+  }
 }
 
 export async function removeFriend(friendId: string) {
-  const supabase = await createServerSupabaseClient();
+  try {
+    const supabase = await getStableSupabaseClient();
+    if (!supabase)
+      return { success: false, error: "Failed to initialize Supabase client" };
 
-  const { data: currentUser } = await supabase.auth.getUser();
-  if (!currentUser.user) return { success: false, error: "Not authenticated" };
+    const { data: currentUser } = await supabase.auth.getUser();
+    if (!currentUser?.user)
+      return { success: false, error: "Not authenticated" };
 
-  // Delete both friendship records
-  const { error } = await supabase
-    .from("friends")
-    .delete()
-    .or(
-      `and(user_id.eq.${currentUser.user.id},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${currentUser.user.id})`,
-    );
+    // Delete both friendship records
+    const { error } = await supabase
+      .from("friends")
+      .delete()
+      .or(
+        `and(user_id.eq.${currentUser.user.id},friend_id.eq.${friendId}),and(user_id.eq.${friendId},friend_id.eq.${currentUser.user.id})`,
+      );
 
-  if (error) {
-    console.error("Error removing friend:", error);
-    return { success: false, error: error.message };
+    if (error) {
+      console.error("Error removing friend:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (e) {
+    console.error("[lib/friends] Exception in removeFriend:", e);
+    return { success: false, error: "An unexpected error occurred" };
   }
-
-  return { success: true };
 }

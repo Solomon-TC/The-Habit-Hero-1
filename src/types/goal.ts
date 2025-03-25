@@ -7,6 +7,7 @@ export interface Goal {
   progress: number;
   start_date: string;
   end_date: string | null;
+  xp_value: number;
   created_at: string;
   updated_at: string;
   milestones?: Milestone[];
@@ -19,6 +20,7 @@ export interface Milestone {
   description: string | null;
   is_completed: boolean;
   due_date: string | null;
+  xp_value: number;
   created_at: string;
   updated_at: string;
 }

@@ -8,6 +8,7 @@ export interface Habit {
   streak: number;
   color?: string;
   icon?: string;
+  xp_value: number;
   created_at: string;
   updated_at: string;
 }

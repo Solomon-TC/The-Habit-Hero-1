@@ -192,36 +192,75 @@ export async function respondToFriendRequestAction(formData: FormData) {
   if (!currentUser.user) return { success: false, error: "Not authenticated" };
 
   // Get the request
-  const { data: request } = await supabase
+  const { data: request, error: requestError } = await supabase
     .from("friend_requests")
     .select("*")
     .eq("id", requestId)
     .eq("receiver_id", currentUser.user.id)
     .single();
 
-  if (!request) {
+  if (requestError || !request) {
+    console.error("Friend request not found:", requestError);
     return { success: false, error: "Friend request not found" };
   }
 
   if (accept) {
-    // Start a transaction to update the request and create friendship
-    const { error: updateError } = await supabase
-      .from("friend_requests")
-      .update({ status: "accepted" })
-      .eq("id", requestId);
+    try {
+      // Start a transaction to update the request and create friendship
+      const { error: updateError } = await supabase
+        .from("friend_requests")
+        .update({ status: "accepted" })
+        .eq("id", requestId);
 
-    if (updateError) {
-      return { success: false, error: updateError.message };
-    }
+      if (updateError) {
+        console.error("Error updating friend request:", updateError);
+        return { success: false, error: updateError.message };
+      }
 
-    // Create two friendship records (one for each user)
-    const { error: friendshipError } = await supabase.from("friends").insert([
-      { user_id: currentUser.user.id, friend_id: request.sender_id },
-      { user_id: request.sender_id, friend_id: currentUser.user.id },
-    ]);
+      // Explicitly log the friendship creation attempt
+      console.log("Creating friendship records between:", {
+        user1: currentUser.user.id,
+        user2: request.sender_id,
+      });
 
-    if (friendshipError) {
-      return { success: false, error: friendshipError.message };
+      // First check if friendship records already exist to avoid duplicates
+      const { data: existingFriendships } = await supabase
+        .from("friends")
+        .select("*")
+        .or(
+          `and(user_id.eq.${currentUser.user.id},friend_id.eq.${request.sender_id}),and(user_id.eq.${request.sender_id},friend_id.eq.${currentUser.user.id})`,
+        );
+
+      if (existingFriendships && existingFriendships.length > 0) {
+        console.log("Friendship records already exist:", existingFriendships);
+      } else {
+        // Create two friendship records (one for each user)
+        const { data: friendshipData, error: friendshipError } = await supabase
+          .from("friends")
+          .insert([
+            {
+              user_id: currentUser.user.id,
+              friend_id: request.sender_id,
+              created_at: new Date().toISOString(),
+            },
+            {
+              user_id: request.sender_id,
+              friend_id: currentUser.user.id,
+              created_at: new Date().toISOString(),
+            },
+          ])
+          .select();
+
+        if (friendshipError) {
+          console.error("Error creating friendship:", friendshipError);
+          return { success: false, error: friendshipError.message };
+        }
+
+        console.log("Friendship created successfully:", friendshipData);
+      }
+    } catch (error) {
+      console.error("Unexpected error in friend request acceptance:", error);
+      return { success: false, error: "An unexpected error occurred" };
     }
   } else {
     // Reject the request
@@ -231,6 +270,7 @@ export async function respondToFriendRequestAction(formData: FormData) {
       .eq("id", requestId);
 
     if (error) {
+      console.error("Error rejecting friend request:", error);
       return { success: false, error: error.message };
     }
   }

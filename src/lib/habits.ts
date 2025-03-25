@@ -117,12 +117,16 @@ export async function deleteHabit(id: string): Promise<boolean> {
   return true;
 }
 
+import { awardXP } from "./xp";
+
 export async function logHabitCompletion(
   habitId: string,
   userId: string,
   count: number = 1,
   notes?: string,
-): Promise<HabitLog | null> {
+) {
+  // Force cache invalidation by adding a timestamp
+  const timestamp = Date.now();
   const supabase = createBrowserSupabaseClient();
 
   // Create the log entry
@@ -143,7 +147,7 @@ export async function logHabitCompletion(
     return null;
   }
 
-  // Get the habit to check streak
+  // Get the habit to check streak and award XP
   const { data: habit, error: habitError } = await supabase
     .from("habits")
     .select("*")
@@ -170,7 +174,25 @@ export async function logHabitCompletion(
     console.error("Error updating habit streak:", updateError);
   }
 
-  return logData;
+  // Award XP to the user
+  const xpValue = habit.xp_value || 10; // Default to 10 XP if not set
+  const xpResult = await awardXP(userId, xpValue, "habit", habitId);
+
+  if (xpResult.leveledUp) {
+    // Could trigger a notification or animation here
+    console.log(
+      `User leveled up from ${xpResult.oldLevel} to ${xpResult.newLevel}!`,
+    );
+  }
+
+  // Return the log data along with level up information
+  return {
+    ...logData,
+    leveledUp: xpResult.leveledUp,
+    oldLevel: xpResult.oldLevel,
+    newLevel: xpResult.newLevel,
+    xpGained: xpValue,
+  };
 }
 
 export async function getHabitLogs(

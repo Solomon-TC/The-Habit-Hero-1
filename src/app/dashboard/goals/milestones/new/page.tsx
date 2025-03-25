@@ -20,8 +20,9 @@ export default async function NewMilestonePage({
     return redirect("/sign-in");
   }
 
-  // Use await with searchParams to fix the dynamic API error
-  const goalId = await Promise.resolve(searchParams.goalId);
+  // Properly await searchParams to fix the dynamic API error
+  const params = await searchParams;
+  const goalId = params.goalId;
   if (!goalId) {
     return redirect("/dashboard/goals");
   }

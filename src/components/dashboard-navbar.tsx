@@ -31,11 +31,29 @@ export default function DashboardNavbar() {
   const supabase = createClient();
   const router = useRouter();
   const pathname = usePathname();
+  const [userData, setUserData] = React.useState<any>(null);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push("/");
   };
+
+  React.useEffect(() => {
+    async function getUserData() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        const { data } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", user.id)
+          .single();
+        setUserData(data);
+      }
+    }
+    getUserData();
+  }, []);
 
   const navItems = [
     {
@@ -97,13 +115,18 @@ export default function DashboardNavbar() {
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full h-8 w-8 bg-purple-100"
-              >
-                <UserCircle className="h-5 w-5 text-purple-600" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <div className="text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full px-2 py-0.5 border border-yellow-300">
+                  Lv{userData?.level || 1}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="rounded-full h-8 w-8 bg-purple-100"
+                >
+                  <UserCircle className="h-5 w-5 text-purple-600" />
+                </Button>
+              </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>

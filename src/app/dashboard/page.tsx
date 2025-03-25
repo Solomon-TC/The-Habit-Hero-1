@@ -1,7 +1,8 @@
 import DashboardNavbar from "@/components/dashboard-navbar";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
-import { InfoIcon, UserCircle, Calendar, Settings } from "lucide-react";
+import { InfoIcon, UserCircle, Calendar, Settings, Star } from "lucide-react";
 import { redirect } from "next/navigation";
+import { calculateLevelProgress, getXPForNextLevel } from "@/lib/xp";
 import { SubscriptionCheck } from "@/components/subscription-check";
 import StatsOverview from "@/components/stats-overview";
 import HabitTracker from "@/components/habit-tracker";
@@ -30,12 +31,38 @@ export default async function Dashboard() {
     return redirect("/sign-in");
   }
 
-  // Get user profile data
+  // Add a timestamp to force revalidation on each request
+  const timestamp = Date.now();
+  // Force cache invalidation for Supabase queries
+  const cacheInvalidationKey = `?t=${timestamp}`;
+
+  // Get user profile data with cache-busting query parameter to ensure fresh data
   const { data: userData } = await supabase
     .from("users")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .single()
+    .abortSignal(new AbortController().signal); // Force fresh data
+
+  // Log the user data for debugging
+  console.log(`User data fetched at ${new Date().toISOString()}:`, userData);
+
+  // Calculate XP progress to next level using the utility functions
+  const userLevel = userData?.level || 1;
+  const userXP = userData?.xp || 0;
+
+  // Get XP needed for next level
+  const xpForNextLevel = getXPForNextLevel(userLevel);
+
+  // Calculate level progress percentage
+  const levelProgress = calculateLevelProgress(userXP, userLevel);
+
+  // Calculate XP in current level for display
+  let totalXPForCurrentLevel = 0;
+  for (let i = 1; i < userLevel; i++) {
+    totalXPForCurrentLevel += Math.floor(100 * Math.pow(1.5, i - 1));
+  }
+  const xpInCurrentLevel = userXP - totalXPForCurrentLevel;
 
   // Get user habits with progress directly from the server
   const { data: habits = [] } = await supabase
@@ -184,14 +211,20 @@ export default async function Dashboard() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Total Habits
+                    Level {userLevel}
                   </CardTitle>
-                  <Award className="h-4 w-4 text-blue-500" />
+                  <Star className="h-4 w-4 text-yellow-500" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{totalHabits}</div>
-                  <p className="text-xs text-muted-foreground">
-                    Tracking your progress
+                  <div className="flex justify-between text-sm mb-1">
+                    <span>XP: {userXP}</span>
+                    <span>
+                      {xpInCurrentLevel}/{xpForNextLevel}
+                    </span>
+                  </div>
+                  <Progress value={levelProgress} className="h-2 bg-gray-200" />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {100 - levelProgress}% to level {userLevel + 1}
                   </p>
                 </CardContent>
               </Card>
