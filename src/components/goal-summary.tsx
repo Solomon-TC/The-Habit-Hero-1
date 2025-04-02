@@ -2,6 +2,7 @@ import * as React from "react";
 import { Goal } from "@/types/goal";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Progress } from "./ui/progress";
+import { showGameToast } from "./level-up-toast";
 
 interface GoalSummaryProps {
   goals: Goal[];
@@ -41,6 +42,17 @@ export default function GoalSummary({ goals }: GoalSummaryProps) {
         new Date(a.due_date!).getTime() - new Date(b.due_date!).getTime(),
     )
     .slice(0, 3); // Get the 3 most imminent milestones
+
+  // Function to handle goal completion (for demonstration)
+  const handleGoalComplete = (goalId: string, goalTitle: string) => {
+    // Show game toast notification
+    showGameToast({
+      type: "goal",
+      title: `Goal completed: ${goalTitle}`,
+      xpGained: 50, // Default XP value for goals
+      leveledUp: false,
+    });
+  };
 
   return (
     <div className="space-y-6">

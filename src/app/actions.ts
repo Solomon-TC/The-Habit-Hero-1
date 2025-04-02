@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 export const signUpAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const password = formData.get("password")?.toString();
-  const fullName = formData.get("full_name")?.toString() || '';
+  const fullName = formData.get("full_name")?.toString() || "";
   const supabase = await createClient();
 
   if (!email || !password) {
@@ -19,14 +19,17 @@ export const signUpAction = async (formData: FormData) => {
     );
   }
 
-  const { data: { user }, error } = await supabase.auth.signUp({
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: fullName,
         email: email,
-      }
+      },
     },
   });
 
@@ -36,23 +39,77 @@ export const signUpAction = async (formData: FormData) => {
 
   if (user) {
     try {
+      // Import the createClient function from the server module
+      const { createServiceRoleClient } = await import(
+        "../lib/supabase-server-actions"
+      );
 
-      const { error: updateError } = await supabase
-        .from('users')
-        .insert({
+      // Create a service role client that bypasses RLS
+      const adminClient = createServiceRoleClient();
+
+      if (!adminClient) {
+        // Error handling without console.error
+        return encodedRedirect(
+          "error",
+          "/sign-up",
+          "Failed to create user profile",
+        );
+      }
+
+      // First check if the user already exists in the users table
+      const { data: existingUser, error: checkError } = await adminClient
+        .from("users")
+        .select("id")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (checkError && checkError.code !== "PGRST116") {
+        return encodedRedirect(
+          "error",
+          "/sign-up",
+          "Failed to check user profile: " + checkError.message,
+        );
+      }
+
+      // Only insert if the user doesn't already exist
+      if (!existingUser) {
+        const { error: updateError } = await adminClient.from("users").insert({
           id: user.id,
           user_id: user.id,
           name: fullName,
           email: email,
           token_identifier: user.id,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          xp: 0,
+          level: 1,
+          updated_at: new Date().toISOString(),
         });
+
+        if (updateError) {
+          // Error handling without console.error
+          return encodedRedirect(
+            "error",
+            "/sign-up",
+            "Failed to create user profile: " + updateError.message,
+          );
+        }
+      }
 
       if (updateError) {
         // Error handling without console.error
+        return encodedRedirect(
+          "error",
+          "/sign-up",
+          "Failed to create user profile: " + updateError.message,
+        );
       }
     } catch (err) {
       // Error handling without console.error
+      return encodedRedirect(
+        "error",
+        "/sign-up",
+        "An error occurred while creating your profile",
+      );
     }
   }
 
@@ -157,10 +214,10 @@ export const checkUserSubscription = async (userId: string) => {
   const supabase = await createClient();
 
   const { data: subscription, error } = await supabase
-    .from('subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('status', 'active')
+    .from("subscriptions")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("status", "active")
     .single();
 
   if (error) {

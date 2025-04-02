@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -8,18 +9,129 @@ import {
   CardTitle,
 } from "./ui/card";
 import { Activity, Award, Calendar, TrendingUp } from "lucide-react";
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
+import { createRealtimeSubscription } from "@/lib/real-time-updates";
 
-export default function StatsOverview() {
+interface StatsOverviewProps {
+  initialStats?: {
+    highestStreak: number;
+    completedHabits: number;
+    totalHabits: number;
+    completionRate: number;
+  };
+  userId: string;
+}
+
+export default function StatsOverview({
+  initialStats,
+  userId,
+}: StatsOverviewProps) {
+  const [stats, setStats] = useState(
+    initialStats || {
+      highestStreak: 0,
+      completedHabits: 0,
+      totalHabits: 0,
+      completionRate: 0,
+    },
+  );
+
+  useEffect(() => {
+    if (!userId) return;
+
+    // Set up real-time subscriptions
+    const supabase = createBrowserSupabaseClient();
+
+    // Function to fetch the latest stats
+    const fetchLatestStats = async () => {
+      // Get today's date at midnight for comparison
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Get all habits for the user
+      const { data: habits = [] } = await supabase
+        .from("habits")
+        .select("*")
+        .eq("user_id", userId);
+
+      // Get all habit logs for today
+      const { data: logs = [] } = await supabase
+        .from("habit_logs")
+        .select("*")
+        .eq("user_id", userId)
+        .gte("completed_at", today.toISOString());
+
+      // Process habits with their logs
+      const habitsWithProgress = habits.map((habit) => {
+        const habitLogs = logs.filter((log) => log.habit_id === habit.id);
+
+        const todayProgress = habitLogs.reduce(
+          (sum, log) => sum + (log.count || 0),
+          0,
+        );
+        const isCompleted = todayProgress >= habit.target_count;
+
+        return {
+          ...habit,
+          isCompleted,
+        };
+      });
+
+      // Calculate stats
+      const completedHabits = habitsWithProgress.filter(
+        (habit) => habit.isCompleted,
+      ).length;
+      const totalHabits = habitsWithProgress.length;
+      const completionRate =
+        totalHabits > 0 ? Math.round((completedHabits / totalHabits) * 100) : 0;
+      const highestStreak =
+        habitsWithProgress.length > 0
+          ? Math.max(...habitsWithProgress.map((h) => h.streak || 0))
+          : 0;
+
+      // Update state with new stats
+      setStats({
+        highestStreak,
+        completedHabits,
+        totalHabits,
+        completionRate,
+      });
+    };
+
+    // Initial fetch
+    fetchLatestStats();
+
+    // Set up subscriptions for habits and habit_logs tables
+    const habitsSubscription = createRealtimeSubscription(
+      "habits",
+      () => fetchLatestStats(),
+      userId,
+    );
+
+    const habitLogsSubscription = createRealtimeSubscription(
+      "habit_logs",
+      () => fetchLatestStats(),
+      userId,
+    );
+
+    // Clean up subscriptions
+    return () => {
+      habitsSubscription?.unsubscribe();
+      habitLogsSubscription?.unsubscribe();
+    };
+  }, [userId, initialStats]);
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Current Streak</CardTitle>
+          <CardTitle className="text-sm font-medium">Highest Streak</CardTitle>
           <Flame className="h-4 w-4 text-orange-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">5 days</div>
-          <p className="text-xs text-muted-foreground">+2 from last week</p>
+          <div className="text-2xl font-bold">{stats.highestStreak} days</div>
+          <p className="text-xs text-muted-foreground">
+            Keep going to increase your streak!
+          </p>
         </CardContent>
       </Card>
       <Card>
@@ -30,20 +142,22 @@ export default function StatsOverview() {
           <Activity className="h-4 w-4 text-purple-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">14</div>
-          <p className="text-xs text-muted-foreground">+5 from last week</p>
+          <div className="text-2xl font-bold">
+            {stats.completedHabits}/{stats.totalHabits}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {stats.totalHabits - stats.completedHabits} remaining today
+          </p>
         </CardContent>
       </Card>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">
-            Consistency Score
-          </CardTitle>
+          <CardTitle className="text-sm font-medium">Completion Rate</CardTitle>
           <TrendingUp className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">78%</div>
-          <p className="text-xs text-muted-foreground">+12% from last month</p>
+          <div className="text-2xl font-bold">{stats.completionRate}%</div>
+          <p className="text-xs text-muted-foreground">Today's progress</p>
         </CardContent>
       </Card>
       <Card>

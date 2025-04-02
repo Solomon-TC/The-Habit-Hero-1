@@ -1,5 +1,13 @@
+"use server";
+
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
+import {
+  createServerSupabaseClient,
+  createServiceRoleClient,
+} from "@/lib/supabase-server-actions";
 import { Habit, HabitLog, HabitWithProgress } from "@/types/habit";
+import { revalidatePath } from "next/cache";
+import { awardXP } from "./xp";
 
 export async function getUserHabits(
   userId: string,
@@ -117,8 +125,6 @@ export async function deleteHabit(id: string): Promise<boolean> {
   return true;
 }
 
-import { awardXP } from "./xp";
-
 export async function logHabitCompletion(
   habitId: string,
   userId: string,
@@ -127,10 +133,17 @@ export async function logHabitCompletion(
 ) {
   // Force cache invalidation by adding a timestamp
   const timestamp = Date.now();
-  const supabase = createBrowserSupabaseClient();
 
-  // Create the log entry
-  const { data: logData, error: logError } = await supabase
+  // Create a service role client that bypasses RLS
+  const adminClient = createServiceRoleClient();
+
+  if (!adminClient) {
+    console.error("Failed to create service role client");
+    return null;
+  }
+
+  // Create the log entry using service role to bypass RLS
+  const { data: logData, error: logError } = await adminClient
     .from("habit_logs")
     .insert({
       habit_id: habitId,
@@ -148,7 +161,7 @@ export async function logHabitCompletion(
   }
 
   // Get the habit to check streak and award XP
-  const { data: habit, error: habitError } = await supabase
+  const { data: habit, error: habitError } = await adminClient
     .from("habits")
     .select("*")
     .eq("id", habitId)
@@ -162,7 +175,7 @@ export async function logHabitCompletion(
   // Update the streak
   // This is a simple implementation - in a real app, you'd want to check if the streak should be maintained or reset
   // based on the frequency and last completion date
-  const { error: updateError } = await supabase
+  const { error: updateError } = await adminClient
     .from("habits")
     .update({
       streak: habit.streak + 1,
@@ -176,23 +189,70 @@ export async function logHabitCompletion(
 
   // Award XP to the user
   const xpValue = habit.xp_value || 10; // Default to 10 XP if not set
-  const xpResult = await awardXP(userId, xpValue, "habit", habitId);
+  console.log(`Awarding ${xpValue} XP for completing habit ${habitId}`);
 
-  if (xpResult.leveledUp) {
-    // Could trigger a notification or animation here
-    console.log(
-      `User leveled up from ${xpResult.oldLevel} to ${xpResult.newLevel}!`,
-    );
+  // Use the server-side awardXP function for better reliability
+  try {
+    const xpResult = await awardXP(userId, xpValue, "habit", habitId);
+    console.log(`XP award result for habit:`, xpResult);
+
+    if (xpResult.error) {
+      console.error(`Error awarding XP for habit:`, xpResult.error);
+      return {
+        ...logData,
+        error: xpResult.error,
+        xpGained: 0,
+        habitName: habit.name || "Habit",
+      };
+    }
+
+    if (xpResult.leveledUp) {
+      // Could trigger a notification or animation here
+      console.log(
+        `User leveled up from ${xpResult.oldLevel} to ${xpResult.newLevel}!`,
+      );
+    } else {
+      console.log(
+        `XP awarded: ${xpValue}, New XP: ${xpResult.newXP}, Level: ${xpResult.newLevel}`,
+      );
+    }
+
+    // Return the log data along with level up information
+    return {
+      ...logData,
+      leveledUp: xpResult.leveledUp,
+      oldLevel: xpResult.oldLevel,
+      newLevel: xpResult.newLevel,
+      xpGained: xpValue,
+      habitName: habit.name || "Habit",
+    };
+  } catch (error) {
+    console.error(`Unexpected error awarding XP for habit:`, error);
+    return {
+      ...logData,
+      error: String(error),
+      xpGained: 0,
+      habitName: habit.name || "Habit",
+    };
   }
+}
 
-  // Return the log data along with level up information
-  return {
-    ...logData,
-    leveledUp: xpResult.leveledUp,
-    oldLevel: xpResult.oldLevel,
-    newLevel: xpResult.newLevel,
-    xpGained: xpValue,
-  };
+/**
+ * Client-side wrapper for logHabitCompletion
+ * This allows client components to call the server action
+ */
+export async function logHabitCompletionFromClient(
+  habitId: string,
+  userId: string,
+  count: number = 1,
+  notes?: string,
+) {
+  try {
+    return await logHabitCompletion(habitId, userId, count, notes);
+  } catch (error) {
+    console.error("Error logging habit completion from client:", error);
+    return null;
+  }
 }
 
 export async function getHabitLogs(

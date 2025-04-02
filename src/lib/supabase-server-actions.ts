@@ -1,5 +1,6 @@
 // Server-side Supabase client for server actions only
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 
 // This file should only be imported in App Router Server Components or Server Actions
 export const createServerSupabaseClient = async () => {
@@ -71,4 +72,23 @@ export const createServerSupabaseClient = async () => {
       },
     );
   }
+};
+
+// Create a service role client that bypasses RLS
+export const createServiceRoleClient = () => {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_KEY) {
+    console.error("Missing Supabase service role credentials");
+    return null;
+  }
+
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    },
+  );
 };

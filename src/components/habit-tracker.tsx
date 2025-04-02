@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { HabitWithProgress } from "@/types/habit";
 import { logHabitCompletion } from "@/lib/habits";
 import HabitList from "./habit-list";
+import HabitForm from "./habit-form";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
-import { Progress } from "./ui/progress";
-import { Check, Plus } from "lucide-react";
 import Link from "next/link";
 import { useLevelUpToast } from "./level-up-toast";
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
 
 interface HabitTrackerProps {
   habits: HabitWithProgress[];
@@ -23,6 +23,197 @@ export default function HabitTracker({ habits, userId }: HabitTrackerProps) {
     xp: number;
   } | null>(null);
   const { setLevelUpData } = useLevelUpToast();
+  const [userXP, setUserXP] = useState<{ xp: number; level: number } | null>(
+    null,
+  );
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  // Memoize callback functions to prevent them from changing on every render
+  const habitUpdateCallback = useCallback((payload) => {
+    if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
+      // Update the local habits when a habit is updated
+      setLocalHabits((prev) => {
+        const habitIndex = prev.findIndex((h) => h.id === payload.new.id);
+        if (habitIndex >= 0) {
+          // Update existing habit
+          const updatedHabits = [...prev];
+          updatedHabits[habitIndex] = {
+            ...updatedHabits[habitIndex],
+            ...payload.new,
+          };
+          return updatedHabits;
+        } else if (payload.eventType === "INSERT") {
+          // Add new habit
+          return [...prev, { ...payload.new, progress: 0, isCompleted: false }];
+        }
+        return prev;
+      });
+    } else if (payload.eventType === "DELETE") {
+      // Remove deleted habit
+      setLocalHabits((prev) => prev.filter((h) => h.id !== payload.old.id));
+    }
+  }, []);
+
+  const habitLogCallback = useCallback((payload) => {
+    if (payload.eventType === "INSERT") {
+      // Update the progress of the corresponding habit
+      setLocalHabits((prev) => {
+        return prev.map((habit) => {
+          if (habit.id === payload.new.habit_id) {
+            const newProgress =
+              (habit.progress || 0) + (payload.new.count || 1);
+            const isCompleted = newProgress >= habit.target_count;
+            return {
+              ...habit,
+              progress: newProgress,
+              isCompleted,
+              lastCompletedAt: payload.new.completed_at,
+            };
+          }
+          return habit;
+        });
+      });
+    }
+  }, []);
+
+  const xpUpdateCallback = useCallback(
+    (userData) => {
+      // Update user XP and level
+      setUserXP((prevXP) => {
+        // Only update if the data is different to prevent unnecessary renders
+        if (
+          !prevXP ||
+          prevXP.xp !== userData.xp ||
+          prevXP.level !== userData.level
+        ) {
+          // Check if user leveled up
+          if (prevXP && userData.level > prevXP.level) {
+            const levelUpData = {
+              level: userData.level,
+              xp: userData.xp - prevXP.xp,
+            };
+
+            setLevelUpInfo(levelUpData);
+
+            setLevelUpData({
+              newLevel: userData.level,
+              xpGained: userData.xp - prevXP.xp,
+            });
+
+            // Clear the level up notification after 5 seconds
+            setTimeout(() => setLevelUpInfo(null), 5000);
+          }
+
+          return {
+            xp: userData.xp || 0,
+            level: userData.level || 1,
+          };
+        }
+        return prevXP;
+      });
+    },
+    [setLevelUpData],
+  );
+
+  // Subscribe to real-time updates using useEffect with memoized callbacks
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient();
+    if (!supabase) return;
+
+    // Create subscription for habits
+    const habitChannel = supabase
+      .channel(`habits_${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "habits",
+          filter: `user_id=eq.${userId}`,
+        },
+        habitUpdateCallback,
+      )
+      .subscribe((status) => {
+        console.log(`Habit subscription status: ${status}`);
+      });
+
+    // Listen for custom habit update events (for immediate UI updates)
+    const handleHabitUpdate = (event: CustomEvent) => {
+      const updatedHabit = event.detail.habit;
+      if (updatedHabit) {
+        setLocalHabits((prev) =>
+          prev.map((h) => (h.id === updatedHabit.id ? updatedHabit : h)),
+        );
+      }
+    };
+
+    window.addEventListener(
+      "habit-updated",
+      handleHabitUpdate as EventListener,
+    );
+
+    return () => {
+      supabase.removeChannel(habitChannel);
+      window.removeEventListener(
+        "habit-updated",
+        handleHabitUpdate as EventListener,
+      );
+    };
+  }, [userId, habitUpdateCallback]);
+
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient();
+    if (!supabase) return;
+
+    // Create subscription for habit logs
+    const logChannel = supabase
+      .channel(`habit_logs_${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "habit_logs",
+          filter: `user_id=eq.${userId}`,
+        },
+        habitLogCallback,
+      )
+      .subscribe((status) => {
+        console.log(`Habit logs subscription status: ${status}`);
+      });
+
+    return () => {
+      supabase.removeChannel(logChannel);
+    };
+  }, [userId, habitLogCallback]);
+
+  useEffect(() => {
+    const supabase = createBrowserSupabaseClient();
+    if (!supabase) return;
+
+    // Create subscription for user XP updates
+    const xpChannel = supabase
+      .channel(`users_${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "users",
+          filter: `id=eq.${userId}`,
+        },
+        (payload) => {
+          if (payload.new) {
+            xpUpdateCallback(payload.new);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(xpChannel);
+    };
+  }, [userId, xpUpdateCallback]);
 
   const handleComplete = async (habit: HabitWithProgress) => {
     if (habit.isCompleted) return;
@@ -44,8 +235,6 @@ export default function HabitTracker({ habits, userId }: HabitTrackerProps) {
         ),
       );
 
-      // Check if the user leveled up (this would come from the server in a real implementation)
-      // For demo purposes, randomly show level up occasionally
       // Check if the user leveled up from the result
       if (result.leveledUp) {
         // Use both the local notification and the toast system
@@ -97,8 +286,6 @@ export default function HabitTracker({ habits, userId }: HabitTrackerProps) {
     );
   };
 
-  const [showAddForm, setShowAddForm] = useState(false);
-
   // If we want to show a custom UI for habits
   if (localHabits.length === 0) {
     return (
@@ -125,12 +312,9 @@ export default function HabitTracker({ habits, userId }: HabitTrackerProps) {
             </Button>
           </CardContent>
         </Card>
-        <HabitForm
-          open={showAddForm}
-          onOpenChange={setShowAddForm}
-          userId={userId}
-          mode="create"
-        />
+        {showAddForm && (
+          <HabitForm userId={userId} onClose={() => setShowAddForm(false)} />
+        )}
         {renderLevelUpNotification()}
       </div>
     );

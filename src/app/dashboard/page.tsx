@@ -19,6 +19,7 @@ import { getUserGoals } from "@/lib/goals";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { DebugXPButton } from "@/components/debug-xp-button";
 
 export default async function Dashboard() {
   const supabase = await createServerSupabaseClient();
@@ -163,51 +164,16 @@ export default async function Dashboard() {
           {/* Stats Overview */}
           <section>
             <h2 className="text-xl font-semibold mb-4">Your Progress</h2>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Highest Streak
-                  </CardTitle>
-                  <Flame className="h-4 w-4 text-orange-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{highestStreak} days</div>
-                  <p className="text-xs text-muted-foreground">
-                    Keep going to increase your streak!
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Habits Completed
-                  </CardTitle>
-                  <Activity className="h-4 w-4 text-purple-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {completedHabits}/{totalHabits}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    {totalHabits - completedHabits} remaining today
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Completion Rate
-                  </CardTitle>
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{completionRate}%</div>
-                  <p className="text-xs text-muted-foreground">
-                    Today's progress
-                  </p>
-                </CardContent>
-              </Card>
+            <StatsOverview
+              initialStats={{
+                highestStreak,
+                completedHabits,
+                totalHabits,
+                completionRate,
+              }}
+              userId={user.id}
+            />
+            <div className="mt-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
@@ -390,6 +356,12 @@ export default async function Dashboard() {
               </Card>
             </TabsContent>
           </Tabs>
+
+          {/* Debug XP Tools */}
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-4">Debug Tools</h2>
+            <DebugXPButton />
+          </div>
         </div>
       </main>
     </SubscriptionCheck>

@@ -98,13 +98,61 @@ export async function updateGoalProgress(goalId: string, progress: number) {
   // Award XP if the goal is newly completed
   if (!wasCompleted && isNowCompleted) {
     const xpValue = goal.xp_value || 50; // Default to 50 XP if not set
-    const xpResult = await awardXP(goal.user_id, xpValue, "goal", goalId);
+    console.log(`Awarding ${xpValue} XP for completing goal ${goalId}`);
+    try {
+      // Check if user exists before awarding XP
+      try {
+        const { data: existingUser, error: existingUserError } = await supabase
+          .from("users")
+          .select("id")
+          .eq("id", goal.user_id)
+          .single();
 
-    if (xpResult.leveledUp) {
-      // Could trigger a notification or animation here
-      console.log(
-        `User leveled up from ${xpResult.oldLevel} to ${xpResult.newLevel}!`,
-      );
+        if (existingUserError && existingUserError.code === "PGRST116") {
+          console.log(`Creating new user record for ${goal.user_id}`);
+        }
+      } catch (err) {
+        console.log(`Error checking user existence: ${err}`);
+      }
+
+      const xpResult = await awardXP(goal.user_id, xpValue, "goal", goalId);
+      console.log(`XP award result for goal:`, xpResult);
+      if (xpResult.error) {
+        console.error(`Error awarding XP for goal:`, xpResult.error);
+        return {
+          data,
+          xpAwarded: xpValue,
+          error: xpResult.error,
+          goalName: goal.title || "Goal",
+        };
+      }
+
+      if (xpResult.leveledUp) {
+        // Could trigger a notification or animation here
+        console.log(
+          `User leveled up from ${xpResult.oldLevel} to ${xpResult.newLevel}!`,
+        );
+      } else {
+        console.log(
+          `XP awarded: ${xpValue}, New XP: ${xpResult.newXP}, Level: ${xpResult.newLevel}`,
+        );
+      }
+
+      return {
+        data,
+        xpAwarded: xpValue,
+        leveledUp: xpResult.leveledUp,
+        newLevel: xpResult.newLevel,
+        goalName: goal.title || "Goal",
+      };
+    } catch (error) {
+      console.error(`Unexpected error awarding XP for goal:`, error);
+      return {
+        data,
+        xpAwarded: xpValue,
+        error: String(error),
+        goalName: goal.title || "Goal",
+      };
     }
   }
 

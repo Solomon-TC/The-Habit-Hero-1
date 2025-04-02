@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "./ui/alert-dialog";
+import { showGameToast } from "./level-up-toast";
 
 interface HabitCardProps {
   habit: HabitWithProgress;
@@ -37,43 +38,91 @@ export default function HabitCard({ habit, userId }: HabitCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [localHabit, setLocalHabit] = useState<HabitWithProgress>(habit);
 
   const handleComplete = async () => {
-    if (habit.isCompleted) return;
+    if (localHabit.isCompleted) return;
 
     setIsLoading(true);
-    try {
-      const supabase = createBrowserSupabaseClient();
+    setError(null);
 
-      // Create the log entry
-      const { error: logError } = await supabase.from("habit_logs").insert({
-        habit_id: habit.id,
-        user_id: userId,
-        count: 1,
-        completed_at: new Date().toISOString(),
+    try {
+      console.log(
+        `Completing habit: ${localHabit.name} (${localHabit.id}) for user: ${userId}`,
+      );
+
+      // Use the server action to log completion and award XP
+      const result = await fetch("/api/habits/complete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          habitId: localHabit.id,
+          userId: userId,
+          count: 1,
+        }),
       });
 
-      if (logError) {
-        console.error("Error logging habit completion:", logError);
-        throw logError;
+      if (!result.ok) {
+        const errorText = await result.text();
+        console.error(
+          `Error response from server: ${result.status} ${errorText}`,
+        );
+        throw new Error(`Server error: ${result.status} ${errorText}`);
       }
 
-      // Update the streak
-      const { error: updateError } = await supabase
-        .from("habits")
-        .update({
-          streak: habit.streak + 1,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", habit.id);
+      const data = await result.json();
 
-      if (updateError) {
-        console.error("Error updating habit streak:", updateError);
+      if (data.error) {
+        console.error("Error completing habit:", data.error);
+        setError(data.error);
+        showGameToast({
+          type: "habit",
+          title: `Error: ${data.error}`,
+          xpGained: 0,
+        });
+        return;
       }
 
-      router.refresh();
+      console.log("Habit completion result:", data);
+
+      // Show game toast notification
+      showGameToast({
+        type: "habit",
+        title: `${localHabit.name} completed!`,
+        xpGained: data.xpGained || localHabit.xp_value || 10,
+        leveledUp: data.leveledUp || false,
+        newLevel: data.newLevel,
+      });
+
+      console.log("Habit completion response:", data);
+
+      // Update local state immediately for instant feedback
+      const updatedHabit = {
+        ...localHabit,
+        progress: localHabit.progress + 1,
+        isCompleted: localHabit.progress + 1 >= localHabit.target_count,
+        lastCompletedAt: new Date().toISOString(),
+      };
+
+      setLocalHabit(updatedHabit);
+
+      // Dispatch custom event for other components to update
+      const habitUpdateEvent = new CustomEvent("habit-updated", {
+        detail: { habit: updatedHabit },
+      });
+      window.dispatchEvent(habitUpdateEvent);
     } catch (error) {
       console.error("Error completing habit:", error);
+      setError(error instanceof Error ? error.message : String(error));
+
+      showGameToast({
+        type: "habit",
+        title: `Error completing habit`,
+        xpGained: 0,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -86,35 +135,44 @@ export default function HabitCard({ habit, userId }: HabitCardProps) {
       const { error } = await supabase
         .from("habits")
         .delete()
-        .eq("id", habit.id);
+        .eq("id", localHabit.id);
 
       if (error) {
         console.error("Error deleting habit:", error);
         throw error;
       }
 
-      router.refresh();
+      // Dispatch custom event for immediate UI update
+      const habitDeleteEvent = new CustomEvent("habit-deleted", {
+        detail: { habitId: localHabit.id },
+      });
+      window.dispatchEvent(habitDeleteEvent);
+
+      setShowDeleteDialog(false);
     } catch (error) {
       console.error("Error deleting habit:", error);
     } finally {
       setIsLoading(false);
-      setShowDeleteDialog(false);
     }
   };
 
+  // Use the local habit state for rendering instead of the prop
   // Get the appropriate icon component
-  const IconComponent = habit.icon ? Icon : Icon;
+  const IconComponent = localHabit.icon ? Icon : Icon;
 
   // Calculate progress percentage
-  const progressPercentage = (habit.progress / habit.target_count) * 100;
+  const progressPercentage =
+    (localHabit.progress / localHabit.target_count) * 100;
 
   // Determine card border color based on habit color or default to purple
-  const borderColorClass = habit.color
-    ? `border-${habit.color}-400`
+  const borderColorClass = localHabit.color
+    ? `border-${localHabit.color}-400`
     : "border-purple-400";
-  const bgColorClass = habit.color ? `bg-${habit.color}-50` : "bg-purple-50";
-  const iconColorClass = habit.color
-    ? `text-${habit.color}-500`
+  const bgColorClass = localHabit.color
+    ? `bg-${localHabit.color}-50`
+    : "bg-purple-50";
+  const iconColorClass = localHabit.color
+    ? `text-${localHabit.color}-500`
     : "text-purple-500";
 
   return (
@@ -127,15 +185,15 @@ export default function HabitCard({ habit, userId }: HabitCardProps) {
             <div className="flex items-center gap-2">
               <div className={`p-2 rounded-full ${bgColorClass}`}>
                 <Icon
-                  name={(habit.icon as any) || "activity"}
+                  name={(localHabit.icon as any) || "activity"}
                   className={`h-5 w-5 ${iconColorClass}`}
                 />
               </div>
               <div>
-                <h3 className="font-semibold text-lg">{habit.name}</h3>
-                {habit.description && (
+                <h3 className="font-semibold text-lg">{localHabit.name}</h3>
+                {localHabit.description && (
                   <p className="text-sm text-muted-foreground">
-                    {habit.description}
+                    {localHabit.description}
                   </p>
                 )}
               </div>
@@ -164,11 +222,11 @@ export default function HabitCard({ habit, userId }: HabitCardProps) {
           <div className="flex justify-between items-center mt-2">
             <Badge variant="outline" className="flex gap-1 items-center">
               <Icon name="flame" className="h-3 w-3 text-orange-500" />
-              <span>Streak: {habit.streak}</span>
+              <span>Streak: {localHabit.streak}</span>
             </Badge>
             <Badge variant="outline">
-              {habit.frequency.charAt(0).toUpperCase() +
-                habit.frequency.slice(1)}
+              {localHabit.frequency.charAt(0).toUpperCase() +
+                localHabit.frequency.slice(1)}
             </Badge>
           </div>
         </CardHeader>
@@ -176,17 +234,17 @@ export default function HabitCard({ habit, userId }: HabitCardProps) {
           <div className="flex justify-between text-sm mb-1">
             <span>Progress</span>
             <span>
-              {habit.progress} / {habit.target_count}
+              {localHabit.progress} / {localHabit.target_count}
             </span>
           </div>
           <Progress value={progressPercentage} className="h-2 bg-gray-200" />
           <div className="mt-4 flex gap-2">
-            {Array.from({ length: habit.target_count }).map((_, i) => (
+            {Array.from({ length: localHabit.target_count }).map((_, i) => (
               <div
                 key={i}
-                className={`w-6 h-6 rounded-full flex items-center justify-center ${i < habit.progress ? `bg-${habit.color || "purple"}-100 text-${habit.color || "purple"}-600` : "bg-gray-100 text-gray-400"}`}
+                className={`w-6 h-6 rounded-full flex items-center justify-center ${i < localHabit.progress ? `bg-${localHabit.color || "purple"}-100 text-${localHabit.color || "purple"}-600` : "bg-gray-100 text-gray-400"}`}
               >
-                {i < habit.progress ? (
+                {i < localHabit.progress ? (
                   <Icon name="check" className="h-4 w-4" />
                 ) : (
                   <div className="w-3 h-3 rounded-full bg-gray-300"></div>
@@ -194,6 +252,10 @@ export default function HabitCard({ habit, userId }: HabitCardProps) {
               </div>
             ))}
           </div>
+
+          {error && (
+            <div className="mt-2 text-sm text-red-500">Error: {error}</div>
+          )}
         </CardContent>
         <CardFooter className="flex justify-between pt-2">
           <Button
@@ -206,14 +268,14 @@ export default function HabitCard({ habit, userId }: HabitCardProps) {
             Refresh
           </Button>
           <Button
-            className={`${habit.color ? `bg-${habit.color}-600 hover:bg-${habit.color}-700` : "bg-purple-600 hover:bg-purple-700"}`}
+            className={`${localHabit.color ? `bg-${localHabit.color}-600 hover:bg-${localHabit.color}-700` : "bg-purple-600 hover:bg-purple-700"}`}
             size="sm"
             onClick={handleComplete}
-            disabled={isLoading || habit.isCompleted}
+            disabled={isLoading || localHabit.isCompleted}
           >
             {isLoading ? (
               <Icon name="spinner" className="mr-1 h-4 w-4 animate-spin" />
-            ) : habit.isCompleted ? (
+            ) : localHabit.isCompleted ? (
               <>
                 <Icon name="check" className="mr-1 h-4 w-4" />
                 Completed
@@ -230,7 +292,7 @@ export default function HabitCard({ habit, userId }: HabitCardProps) {
         open={showEditForm}
         onOpenChange={setShowEditForm}
         userId={userId}
-        habit={habit}
+        habit={localHabit}
         mode="edit"
       />
 
@@ -240,8 +302,8 @@ export default function HabitCard({ habit, userId }: HabitCardProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the habit "{habit.name}" and all of
-              its tracking history. This action cannot be undone.
+              This will permanently delete the habit "{localHabit.name}" and all
+              of its tracking history. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

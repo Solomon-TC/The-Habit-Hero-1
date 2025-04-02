@@ -108,19 +108,50 @@ export async function completeMilestone(
   }
 
   // Award XP for completing the milestone
-  // Use a fixed XP value for milestones
-  const xpValue = 20; // Fixed XP value for milestones
-  const xpResult = await awardXP(userId, xpValue, "milestone", milestoneId);
+  // Use the milestone's XP value or default to 20
+  const xpValue = milestone.xp_value || 20;
+  console.log(`Awarding ${xpValue} XP for completing milestone ${milestoneId}`);
+  try {
+    // Check if user exists before awarding XP
+    try {
+      const { data: existingUser, error: existingUserError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("id", userId)
+        .single();
 
-  // Recalculate the goal progress
-  await calculateGoalProgress(goalId);
+      if (existingUserError && existingUserError.code === "PGRST116") {
+        console.log(`Creating new user record for ${userId}`);
+      }
+    } catch (err) {
+      console.log(`Error checking user existence: ${err}`);
+    }
 
-  return {
-    data,
-    xpAwarded: xpValue,
-    leveledUp: xpResult.leveledUp,
-    newLevel: xpResult.newLevel,
-  };
+    const xpResult = await awardXP(userId, xpValue, "milestone", milestoneId);
+    console.log(`XP award result for milestone:`, xpResult);
+    if (xpResult.error) {
+      console.error(`Error awarding XP for milestone:`, xpResult.error);
+    }
+
+    // Recalculate the goal progress
+    await calculateGoalProgress(goalId);
+
+    return {
+      data,
+      xpAwarded: xpValue,
+      leveledUp: xpResult?.leveledUp || false,
+      newLevel: xpResult?.newLevel || 1,
+      milestoneName: milestone.title || "Milestone",
+    };
+  } catch (error) {
+    console.error(`Unexpected error awarding XP for milestone:`, error);
+    return {
+      data,
+      xpAwarded: xpValue,
+      error: String(error),
+      milestoneName: milestone.title || "Milestone",
+    };
+  }
 }
 
 export async function uncompleteMilestone(milestoneId: string, goalId: string) {
