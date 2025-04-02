@@ -2,6 +2,7 @@ import DashboardNavbar from "@/components/dashboard-navbar";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { InfoIcon, UserCircle, Calendar, Settings, Star } from "lucide-react";
 import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { calculateLevelProgress, getXPForNextLevel } from "@/lib/xp";
 import { SubscriptionCheck } from "@/components/subscription-check";
 import StatsOverview from "@/components/stats-overview";
@@ -22,6 +23,8 @@ import { Progress } from "@/components/ui/progress";
 import { DebugXPButton } from "@/components/debug-xp-button";
 import LevelProgress from "@/components/level-progress";
 import GameNotifications from "@/components/game-notifications";
+
+import { ClientMilestoneForm } from "./client-milestone-form";
 
 export default async function Dashboard() {
   const supabase = await createServerSupabaseClient();
@@ -236,7 +239,10 @@ export default async function Dashboard() {
                 ) : (
                   <div className="grid gap-4">
                     {goals.slice(0, 3).map((goal) => (
-                      <Card key={goal.id} className="overflow-hidden">
+                      <Card
+                        key={goal.id}
+                        className="overflow-hidden hover:border-purple-200 transition-all"
+                      >
                         <CardHeader className="pb-2">
                           <div className="flex justify-between items-start">
                             <CardTitle className="text-base">
@@ -262,14 +268,51 @@ export default async function Dashboard() {
                           {goal.milestones && goal.milestones.length > 0 && (
                             <div className="mt-3">
                               <p className="text-xs text-gray-500 mb-1">
-                                Next milestone:
-                              </p>
-                              <p className="text-sm">
                                 {goal.milestones.find((m) => !m.is_completed)
-                                  ?.title || "All milestones completed!"}
+                                  ? "Next milestone:"
+                                  : "Milestones:"}
                               </p>
+                              {goal.milestones.find((m) => !m.is_completed) ? (
+                                <div className="milestone-wrapper">
+                                  <ClientMilestoneForm
+                                    milestoneId={
+                                      goal.milestones.find(
+                                        (m) => !m.is_completed,
+                                      )?.id || ""
+                                    }
+                                    goalId={goal.id}
+                                    userId={user.id}
+                                    milestoneTitle={
+                                      goal.milestones.find(
+                                        (m) => !m.is_completed,
+                                      )?.title || ""
+                                    }
+                                  />
+                                </div>
+                              ) : (
+                                <p className="text-sm">
+                                  All milestones completed!
+                                </p>
+                              )}
                             </div>
                           )}
+                          <div className="flex justify-between mt-3">
+                            <Link href={`/dashboard/goals/edit?id=${goal.id}`}>
+                              <Button variant="outline" size="sm">
+                                Edit
+                              </Button>
+                            </Link>
+                            <Link
+                              href={`/dashboard/goals/milestones/new?goalId=${goal.id}`}
+                            >
+                              <Button
+                                size="sm"
+                                className="bg-purple-600 hover:bg-purple-700"
+                              >
+                                Add Milestone
+                              </Button>
+                            </Link>
+                          </div>
                         </CardContent>
                       </Card>
                     ))}

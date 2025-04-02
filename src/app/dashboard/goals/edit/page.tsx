@@ -20,7 +20,9 @@ export default async function EditGoalPage({
     return redirect("/sign-in");
   }
 
-  const goalId = searchParams.id;
+  // Ensure searchParams is properly awaited
+  const params = await Promise.resolve(searchParams);
+  const goalId = params.id;
   if (!goalId) {
     return redirect("/dashboard/goals");
   }

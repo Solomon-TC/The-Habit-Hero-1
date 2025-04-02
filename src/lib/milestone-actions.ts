@@ -80,6 +80,10 @@ export async function completeMilestone(
   const timestamp = Date.now();
   const supabase = await createServerSupabaseClient();
 
+  console.log(
+    `[SERVER] Completing milestone ${milestoneId} for goal ${goalId} and user ${userId}`,
+  );
+
   // Get the milestone to check its XP value
   const { data: milestone, error: fetchError } = await supabase
     .from("milestones")
@@ -88,9 +92,11 @@ export async function completeMilestone(
     .single();
 
   if (fetchError) {
-    console.error("Error fetching milestone:", fetchError);
+    console.error("[SERVER] Error fetching milestone:", fetchError);
     return { error: fetchError };
   }
+
+  console.log(`[SERVER] Found milestone: ${milestone.title}`);
 
   // Update the milestone to completed
   const { data, error } = await supabase
@@ -103,14 +109,18 @@ export async function completeMilestone(
     .select();
 
   if (error) {
-    console.error("Error completing milestone:", error);
+    console.error("[SERVER] Error completing milestone:", error);
     return { error };
   }
+
+  console.log(`[SERVER] Successfully marked milestone as completed`);
 
   // Award XP for completing the milestone
   // Use the milestone's XP value or default to 20
   const xpValue = milestone.xp_value || 20;
-  console.log(`Awarding ${xpValue} XP for completing milestone ${milestoneId}`);
+  console.log(
+    `[SERVER] Awarding ${xpValue} XP for completing milestone ${milestoneId}`,
+  );
   try {
     // Check if user exists before awarding XP
     try {
@@ -121,23 +131,26 @@ export async function completeMilestone(
         .single();
 
       if (existingUserError && existingUserError.code === "PGRST116") {
-        console.log(`Creating new user record for ${userId}`);
+        console.log(`[SERVER] Creating new user record for ${userId}`);
       }
     } catch (err) {
-      console.log(`Error checking user existence: ${err}`);
+      console.log(`[SERVER] Error checking user existence: ${err}`);
     }
 
     const xpResult = await awardXP(userId, xpValue, "milestone", milestoneId);
-    console.log(`XP award result for milestone:`, xpResult);
+    console.log(`[SERVER] XP award result for milestone:`, xpResult);
     if (xpResult.error) {
-      console.error(`Error awarding XP for milestone:`, xpResult.error);
+      console.error(
+        `[SERVER] Error awarding XP for milestone:`,
+        xpResult.error,
+      );
     }
 
     // Recalculate the goal progress
     await calculateGoalProgress(goalId);
 
     // Return detailed information for notifications
-    return {
+    const result = {
       data,
       xpAwarded: xpValue,
       leveledUp: xpResult?.leveledUp || false,
@@ -145,8 +158,14 @@ export async function completeMilestone(
       milestoneName: milestone.title || "Milestone",
       type: "milestone",
     };
+
+    console.log(`[SERVER] Returning milestone completion result:`, result);
+    return result;
   } catch (error) {
-    console.error(`Unexpected error awarding XP for milestone:`, error);
+    console.error(
+      `[SERVER] Unexpected error awarding XP for milestone:`,
+      error,
+    );
     return {
       data,
       xpAwarded: xpValue,

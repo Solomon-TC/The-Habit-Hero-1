@@ -67,6 +67,10 @@ import { awardXP } from "./xp";
 export async function updateGoalProgress(goalId: string, progress: number) {
   const supabase = await createServerSupabaseClient();
 
+  console.log(
+    `[SERVER] Updating goal progress for goal ${goalId} to ${progress}%`,
+  );
+
   // Get the goal to check if it's completed
   const { data: goal, error: goalError } = await supabase
     .from("goals")
@@ -75,9 +79,13 @@ export async function updateGoalProgress(goalId: string, progress: number) {
     .single();
 
   if (goalError) {
-    console.error("Error fetching goal:", goalError);
+    console.error("[SERVER] Error fetching goal:", goalError);
     return { error: goalError };
   }
+
+  console.log(
+    `[SERVER] Found goal: ${goal.title}, current progress: ${goal.progress}%`,
+  );
 
   const wasCompleted = goal.progress === 100;
   const isNowCompleted = progress === 100;
@@ -91,14 +99,18 @@ export async function updateGoalProgress(goalId: string, progress: number) {
     .single();
 
   if (error) {
-    console.error("Error updating goal progress:", error);
+    console.error("[SERVER] Error updating goal progress:", error);
     return { error };
   }
+
+  console.log(`[SERVER] Successfully updated goal progress to ${progress}%`);
 
   // Award XP if the goal is newly completed
   if (!wasCompleted && isNowCompleted) {
     const xpValue = goal.xp_value || 50; // Default to 50 XP if not set
-    console.log(`Awarding ${xpValue} XP for completing goal ${goalId}`);
+    console.log(
+      `[SERVER] Awarding ${xpValue} XP for completing goal ${goalId}`,
+    );
     try {
       // Check if user exists before awarding XP
       try {
@@ -109,16 +121,16 @@ export async function updateGoalProgress(goalId: string, progress: number) {
           .single();
 
         if (existingUserError && existingUserError.code === "PGRST116") {
-          console.log(`Creating new user record for ${goal.user_id}`);
+          console.log(`[SERVER] Creating new user record for ${goal.user_id}`);
         }
       } catch (err) {
-        console.log(`Error checking user existence: ${err}`);
+        console.log(`[SERVER] Error checking user existence: ${err}`);
       }
 
       const xpResult = await awardXP(goal.user_id, xpValue, "goal", goalId);
-      console.log(`XP award result for goal:`, xpResult);
+      console.log(`[SERVER] XP award result for goal:`, xpResult);
       if (xpResult.error) {
-        console.error(`Error awarding XP for goal:`, xpResult.error);
+        console.error(`[SERVER] Error awarding XP for goal:`, xpResult.error);
         return {
           data,
           xpAwarded: xpValue,
@@ -131,15 +143,15 @@ export async function updateGoalProgress(goalId: string, progress: number) {
       if (xpResult.leveledUp) {
         // Could trigger a notification or animation here
         console.log(
-          `User leveled up from ${xpResult.oldLevel} to ${xpResult.newLevel}!`,
+          `[SERVER] User leveled up from ${xpResult.oldLevel} to ${xpResult.newLevel}!`,
         );
       } else {
         console.log(
-          `XP awarded: ${xpValue}, New XP: ${xpResult.newXP}, Level: ${xpResult.newLevel}`,
+          `[SERVER] XP awarded: ${xpValue}, New XP: ${xpResult.newXP}, Level: ${xpResult.newLevel}`,
         );
       }
 
-      return {
+      const result = {
         data,
         xpAwarded: xpValue,
         leveledUp: xpResult.leveledUp,
@@ -147,8 +159,11 @@ export async function updateGoalProgress(goalId: string, progress: number) {
         goalName: goal.title || "Goal",
         type: "goal",
       };
+
+      console.log(`[SERVER] Returning goal completion result:`, result);
+      return result;
     } catch (error) {
-      console.error(`Unexpected error awarding XP for goal:`, error);
+      console.error(`[SERVER] Unexpected error awarding XP for goal:`, error);
       return {
         data,
         xpAwarded: xpValue,

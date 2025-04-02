@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Flame, Check, X, Trophy } from "lucide-react";
 import { getFriends, getPendingFriendRequests } from "@/lib/friends";
+import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
 import {
   respondToFriendRequestAction,
   removeFriendAction,
@@ -17,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/client-card";
+import FriendCard from "@/components/friend-card";
 
 function FriendRequests() {
   const [requests, setRequests] = useState<any[]>([]);
@@ -163,26 +165,64 @@ function FriendsList() {
       try {
         console.log("[FriendsList] Loading friends...");
         setLoading(true);
-        // Force a small delay to ensure DB operations have completed
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        const { friends: friendsList } = await getFriends();
-        console.log("[FriendsList] Loaded friends:", friendsList);
 
-        if (friendsList && friendsList.length > 0) {
-          setFriends(friendsList);
+        // Direct fetch from Supabase to debug
+        const supabase = createBrowserSupabaseClient();
+        const { data: userData } = await supabase.auth.getUser();
+
+        if (!userData.user) {
+          console.error("User not authenticated");
+          setError("Not authenticated. Please sign in again.");
+          return;
+        }
+
+        console.log("Current user ID:", userData.user.id);
+
+        // Direct query to get friends
+        const { data: directFriends, error: directError } = await supabase
+          .from("friends")
+          .select(
+            "friend_id, users!friends_friend_id_fkey(id, email, name, level, xp)",
+          )
+          .eq("user_id", userData.user.id);
+
+        if (directError) {
+          console.error("Direct query error:", directError);
+          setError("Database error: " + directError.message);
+          return;
+        }
+
+        console.log("Direct friends query result:", directFriends);
+
+        if (directFriends && directFriends.length > 0) {
+          setFriends(directFriends);
           setError(null);
         } else {
-          console.log("[FriendsList] No friends found, retrying...");
-          // Try one more time after a delay
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-          const { friends: retryFriendsList } = await getFriends();
-          console.log("[FriendsList] Retry loaded friends:", retryFriendsList);
-          setFriends(retryFriendsList || []);
-          setError(null);
+          // Try the regular function as fallback
+          const { friends: friendsList } = await getFriends();
+          console.log(
+            "[FriendsList] Loaded friends via function:",
+            friendsList,
+          );
+
+          if (
+            friendsList &&
+            Array.isArray(friendsList) &&
+            friendsList.length > 0
+          ) {
+            setFriends(friendsList);
+            setError(null);
+          } else {
+            setFriends([]);
+            console.log("No friends found after multiple attempts");
+          }
         }
       } catch (e) {
         console.error("[FriendsList] Error loading friends:", e);
-        setError("Failed to load friends. Please try again.");
+        setError(
+          "Failed to load friends: " +
+            (e instanceof Error ? e.message : String(e)),
+        );
       } finally {
         setLoading(false);
       }
@@ -233,78 +273,48 @@ function FriendsList() {
       </CardHeader>
       <CardContent>
         {friends && friends.length > 0 ? (
-          <div className="space-y-4">
-            {friends.map((friend: any) => {
-              // Calculate a fake streak based on user id for demo purposes
-              const fakeStreak =
-                (parseInt(friend.id.substring(0, 8), 16) % 30) + 1;
-              const isOnline = Math.random() > 0.5; // Random online status for demo
-
-              return (
-                <div
-                  key={friend.id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <Avatar>
-                        <AvatarImage
-                          src={
-                            friend.avatar_url ||
-                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${friend.name || "unknown"}`
-                          }
-                          alt={friend.name || "Unknown User"}
-                        />
-                        <AvatarFallback>
-                          {friend.name?.charAt(0) || "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span
-                        className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-white ${isOnline ? "bg-green-500" : "bg-gray-300"}`}
-                      ></span>
-                    </div>
-                    <div>
-                      <h3 className="font-medium">
-                        {friend.name || "Unknown User"}
-                      </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {friends
+              .filter((friend) => friend && friend.friend_id)
+              .map((friend: any) => {
+                // Ensure we have a unique key by using friend_id or a fallback
+                const uniqueKey = friend.friend_id || `friend-${Math.random()}`;
+                console.log(
+                  "Rendering friend card for:",
+                  friend.friend_id,
+                  friend.users?.name || friend.users?.email || "Unknown",
+                );
+                console.log("Friend data:", friend);
+                return (
+                  <div
+                    key={uniqueKey}
+                    className="border rounded-lg p-4 hover:border-purple-200 transition-all"
+                  >
+                    <h3 className="font-medium">
+                      {friend.users?.name ||
+                        friend.users?.email ||
+                        "Unknown Friend"}
+                    </h3>
+                    {friend.users?.email && (
                       <p className="text-sm text-gray-500">
-                        {isOnline ? "Online now" : "Last seen recently"}
+                        {friend.users.email}
                       </p>
-                    </div>
+                    )}
+                    {friend.users?.level && (
+                      <div className="mt-2">
+                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+                          Level {friend.users.level}
+                        </span>
+                      </div>
+                    )}
+                    <FriendCard
+                      friendId={friend.friend_id}
+                      friendName={friend.users?.name}
+                      friendEmail={friend.users?.email}
+                    />
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge
-                      variant="outline"
-                      className="flex gap-1 items-center bg-orange-50 text-orange-700 border-orange-200"
-                    >
-                      <Flame className="h-3 w-3 text-orange-500" />
-                      <span>{fakeStreak} day streak</span>
-                    </Badge>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline">
-                        <Trophy className="mr-2 h-4 w-4" />
-                        Challenge
-                      </Button>
-                      <form action={removeFriendAction}>
-                        <input
-                          type="hidden"
-                          name="friendId"
-                          value={friend.id}
-                        />
-                        <Button
-                          type="submit"
-                          size="sm"
-                          variant="outline"
-                          className="border-red-200 text-red-600 hover:bg-red-50"
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         ) : (
           <div className="text-center py-6">

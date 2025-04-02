@@ -94,38 +94,48 @@ export function showGameToast({
     `Showing game notification: ${type} - ${title} - XP: ${xpGained}`,
   );
 
-  // Use the new game notification system
-  showGameNotification({
-    type,
-    title,
-    xpGained,
-    leveledUp,
-    newLevel,
-  });
+  try {
+    // Use the new game notification system
+    showGameNotification({
+      type,
+      title,
+      xpGained,
+      leveledUp,
+      newLevel,
+    });
+    console.log("Game notification triggered successfully");
+  } catch (error) {
+    console.error("Error showing game notification:", error);
+  }
 
   // Also use the toast system as a fallback for now
   // This can be removed once the new notification system is confirmed working
-  toast({
-    title: (
-      <div className="flex items-center gap-2">
-        <span>{title}</span>
-      </div>
-    ),
-    description: (
-      <div className="mt-2">
-        {xpGained > 0 && (
-          <p className="text-sm font-medium text-amber-600">
-            +{xpGained} XP gained
-          </p>
-        )}
-        {leveledUp && (
-          <p className="font-semibold text-lg mt-1 animate-pulse text-amber-600">
-            You reached level {newLevel}!
-          </p>
-        )}
-      </div>
-    ),
-    duration: 3000,
-    variant: "default",
-  });
+  try {
+    toast({
+      title: (
+        <div className="flex items-center gap-2">
+          <span>{title}</span>
+        </div>
+      ),
+      description: (
+        <div className="mt-2">
+          {xpGained > 0 && (
+            <p className="text-sm font-medium text-amber-600">
+              +{xpGained} XP gained
+            </p>
+          )}
+          {leveledUp && (
+            <p className="font-semibold text-lg mt-1 animate-pulse text-amber-600">
+              You reached level {newLevel}!
+            </p>
+          )}
+        </div>
+      ),
+      duration: 3000,
+      variant: "default",
+    });
+    console.log("Toast notification triggered successfully");
+  } catch (toastError) {
+    console.error("Error showing toast notification:", toastError);
+  }
 }

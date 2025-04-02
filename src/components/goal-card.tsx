@@ -32,6 +32,16 @@ interface GoalCardProps {
 }
 
 export default function GoalCard({ goal, onDelete }: GoalCardProps) {
+  // Add click handler for the entire card to navigate to edit page
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Only navigate if the click wasn't on a button or other interactive element
+    if (
+      !(e.target as HTMLElement).closest("button") &&
+      !(e.target as HTMLElement).closest("a")
+    ) {
+      router.push(`/dashboard/goals/edit?id=${goal.id}`);
+    }
+  };
   const router = useRouter();
   const supabase = createBrowserSupabaseClient();
   const [showMilestones, setShowMilestones] = useState(false);
@@ -66,7 +76,15 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
     }
   };
 
-  const toggleMilestoneCompletion = async (milestone: Milestone) => {
+  const toggleMilestoneCompletion = async (
+    milestone: Milestone,
+    event?: React.MouseEvent,
+  ) => {
+    // Prevent event propagation to avoid navigation when clicking on milestone checkbox
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
     const newStatus = !milestone.is_completed;
     const { data: userData } = await supabase.auth.getUser();
     const userId = userData.user?.id;
@@ -76,59 +94,102 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
       return;
     }
 
-    if (newStatus) {
-      // If completing the milestone, use the server endpoint to award XP
-      const response = await fetch(`/api/milestones/complete`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          milestoneId: milestone.id,
-          goalId: goal.id,
-          userId: userId,
-        }),
-      });
+    console.log(
+      `[CLIENT] Toggle milestone completion: ${milestone.id}, new status: ${newStatus}`,
+    );
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Milestone completion result:", result);
+    try {
+      if (newStatus) {
+        // If completing the milestone, use the server endpoint to award XP
+        console.log(
+          `[CLIENT] Attempting to complete milestone: ${milestone.id} for goal: ${goal.id}`,
+        );
+        const response = await fetch(`/api/milestones/complete`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            milestoneId: milestone.id,
+            goalId: goal.id,
+            userId: userId,
+          }),
+        });
 
-        // Show notification for XP gained
-        if (result.xpAwarded) {
-          const xpValue = result.xpAwarded || 20;
-          console.log(`Triggering milestone notification with ${xpValue} XP`);
+        if (response.ok) {
+          const result = await response.json();
+          console.log("[CLIENT] Milestone completion result:", result);
 
-          // Use window.alert for a guaranteed notification
-          window.alert(
-            `Milestone Achieved: ${milestone.title}\n+${xpValue} XP gained${result.leveledUp ? `\nYou reached level ${result.newLevel || 1}!` : ""}`,
+          // Show notification for XP gained
+          if (result.xpAwarded) {
+            const xpValue = result.xpAwarded || 20;
+            console.log(
+              `[CLIENT] Triggering milestone notification with ${xpValue} XP`,
+            );
+
+            // Multiple notification methods for redundancy
+            try {
+              console.log(
+                "[CLIENT] Calling showGameToast for milestone completion",
+              );
+              showGameToast({
+                type: "milestone",
+                title: `Milestone Achieved: ${milestone.title}`,
+                xpGained: xpValue,
+                leveledUp: result.leveledUp || false,
+                newLevel: result.newLevel || 1,
+              });
+              console.log("[CLIENT] showGameToast called successfully");
+            } catch (toastError) {
+              console.error(
+                "[CLIENT] Error showing game toast for milestone:",
+                toastError,
+              );
+            }
+
+            // Fallback notification using alert
+            setTimeout(() => {
+              try {
+                console.log("[CLIENT] Showing fallback alert notification");
+                window.alert(
+                  `Milestone Achieved: ${milestone.title}\n+${xpValue} XP gained${result.leveledUp ? `\nYou reached level ${result.newLevel || 1}!` : ""}`,
+                );
+              } catch (alertError) {
+                console.error(
+                  "[CLIENT] Error showing alert notification:",
+                  alertError,
+                );
+              }
+            }, 500);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error(
+            "[CLIENT] Error completing milestone via API:",
+            errorText,
           );
-
-          showGameToast({
-            type: "milestone",
-            title: `Milestone Achieved: ${milestone.title}`,
-            xpGained: xpValue,
-            leveledUp: result.leveledUp || false,
-            newLevel: result.newLevel || 1,
-          });
         }
       } else {
-        console.error("Error completing milestone via API");
-      }
-    } else {
-      // If uncompleting, just update the database directly
-      const { error } = await supabase
-        .from("milestones")
-        .update({
-          is_completed: newStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", milestone.id);
+        // If uncompleting, just update the database directly
+        console.log(`[CLIENT] Uncompleting milestone: ${milestone.id}`);
+        const { error } = await supabase
+          .from("milestones")
+          .update({
+            is_completed: newStatus,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", milestone.id);
 
-      if (error) {
-        console.error("Error updating milestone:", error);
-        return;
+        if (error) {
+          console.error("[CLIENT] Error updating milestone:", error);
+          return;
+        }
       }
+    } catch (error) {
+      console.error(
+        "[CLIENT] Unexpected error in toggleMilestoneCompletion:",
+        error,
+      );
     }
 
     // Update local state
@@ -146,37 +207,145 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
     );
     setGoalProgress(newProgress);
 
-    // Update goal progress in database
-    const { error: progressError } = await supabase
-      .from("goals")
-      .update({
-        progress: newProgress,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", goal.id);
+    try {
+      // Update goal progress in database
+      console.log(
+        `[CLIENT] Updating goal progress: ${goal.id} to ${newProgress}%`,
+      );
 
-    if (progressError) {
-      console.error("Error updating goal progress:", progressError);
-    }
+      // Use the API endpoint for goal progress updates to ensure proper XP handling
+      if (newProgress === 100 && goalProgress !== 100) {
+        console.log(
+          `[CLIENT] Goal is now completed (100%), using API endpoint`,
+        );
 
-    // If goal is now completed (100%), show a notification
-    if (newProgress === 100 && goalProgress !== 100) {
-      // Fetch the updated goal to get XP value
-      const { data: updatedGoal } = await supabase
-        .from("goals")
-        .select("*")
-        .eq("id", goal.id)
-        .single();
+        try {
+          const response = await fetch(`/api/goals/complete`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              goalId: goal.id,
+              progress: newProgress,
+              userId: userId,
+            }),
+          });
 
-      if (updatedGoal) {
-        const xpValue = updatedGoal.xp_value || 50; // Default to 50 XP
-        showGameToast({
-          type: "goal",
-          title: `Goal Accomplished: ${goal.title}`,
-          xpGained: xpValue,
-          leveledUp: false, // We don't know this client-side
-        });
+          if (response.ok) {
+            const result = await response.json();
+            console.log("[CLIENT] Goal completion result:", result);
+
+            // Show notification for XP gained
+            if (result.xpAwarded) {
+              const xpValue = result.xpAwarded || 50;
+              console.log(
+                `[CLIENT] Triggering goal notification with ${xpValue} XP`,
+              );
+
+              // Multiple notification methods for redundancy
+              try {
+                console.log(
+                  "[CLIENT] Calling showGameToast for goal completion",
+                );
+                showGameToast({
+                  type: "goal",
+                  title: `Goal Accomplished: ${goal.title}`,
+                  xpGained: xpValue,
+                  leveledUp: result.leveledUp || false,
+                  newLevel: result.newLevel || 1,
+                });
+                console.log(
+                  "[CLIENT] Goal completion toast shown successfully",
+                );
+              } catch (toastError) {
+                console.error(
+                  "[CLIENT] Error showing game toast for goal completion:",
+                  toastError,
+                );
+              }
+
+              // Fallback notification using alert
+              setTimeout(() => {
+                try {
+                  console.log(
+                    "[CLIENT] Showing fallback alert notification for goal",
+                  );
+                  window.alert(
+                    `Goal Accomplished: ${goal.title}\n+${xpValue} XP gained${result.leveledUp ? `\nYou reached level ${result.newLevel || 1}!` : ""}`,
+                  );
+                } catch (alertError) {
+                  console.error(
+                    "[CLIENT] Error showing alert notification for goal:",
+                    alertError,
+                  );
+                }
+              }, 500);
+            }
+          } else {
+            const errorText = await response.text();
+            console.error("[CLIENT] Error completing goal via API:", errorText);
+
+            // Fallback to direct update if API fails
+            const { error: progressError } = await supabase
+              .from("goals")
+              .update({
+                progress: newProgress,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", goal.id);
+
+            if (progressError) {
+              console.error(
+                "[CLIENT] Error updating goal progress directly:",
+                progressError,
+              );
+            }
+          }
+        } catch (error) {
+          console.error(
+            "[CLIENT] Error handling goal completion via API:",
+            error,
+          );
+
+          // Fallback to direct update if API call fails
+          const { error: progressError } = await supabase
+            .from("goals")
+            .update({
+              progress: newProgress,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", goal.id);
+
+          if (progressError) {
+            console.error(
+              "[CLIENT] Error updating goal progress directly:",
+              progressError,
+            );
+          }
+        }
+      } else {
+        // For non-completion updates, use direct database update
+        const { error: progressError } = await supabase
+          .from("goals")
+          .update({
+            progress: newProgress,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", goal.id);
+
+        if (progressError) {
+          console.error(
+            "[CLIENT] Error updating goal progress:",
+            progressError,
+          );
+        }
       }
+    } catch (error) {
+      console.error(
+        "[CLIENT] Error updating goal progress in database:",
+        error,
+      );
     }
 
     router.refresh();
@@ -204,7 +373,10 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
   };
 
   return (
-    <Card className="overflow-hidden border-2 hover:border-purple-200 transition-all">
+    <Card
+      className="overflow-hidden border-2 hover:border-purple-200 transition-all cursor-pointer"
+      onClick={handleCardClick}
+    >
       <CardHeader className="pb-2 bg-purple-50">
         <div className="flex justify-between items-start">
           <div>
@@ -263,7 +435,7 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
                     className="flex items-start gap-2 p-2 rounded-md hover:bg-gray-50"
                   >
                     <button
-                      onClick={() => toggleMilestoneCompletion(milestone)}
+                      onClick={(e) => toggleMilestoneCompletion(milestone, e)}
                       className="mt-0.5 flex-shrink-0"
                     >
                       {milestone.is_completed ? (

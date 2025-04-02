@@ -4,7 +4,22 @@ import { completeMilestone } from "@/lib/milestone-actions";
 
 export async function POST(request: Request) {
   try {
-    const { milestoneId, goalId, userId } = await request.json();
+    // Check content type and handle different formats
+    const contentType = request.headers.get("content-type");
+    let milestoneId, goalId, userId;
+
+    if (contentType?.includes("application/json")) {
+      const body = await request.json();
+      milestoneId = body.milestoneId;
+      goalId = body.goalId;
+      userId = body.userId;
+    } else {
+      // Handle form data or other formats
+      const formData = await request.formData();
+      milestoneId = formData.get("milestoneId")?.toString();
+      goalId = formData.get("goalId")?.toString();
+      userId = formData.get("userId")?.toString();
+    }
 
     if (!milestoneId || !goalId || !userId) {
       return NextResponse.json(

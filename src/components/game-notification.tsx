@@ -33,15 +33,26 @@ export function showGameNotification(props: GameNotificationProps) {
     visible: true,
   };
 
-  notifications = [...notifications, notification];
-  notifyListeners();
+  console.log(`Adding notification to queue:`, notification);
+  console.log(`Current notifications before adding:`, notifications.length);
 
-  // Auto-remove after 5 seconds
-  setTimeout(() => {
-    removeNotification(id);
-  }, 5000);
+  try {
+    notifications = [...notifications, notification];
+    console.log(`Notifications after adding:`, notifications.length);
+    notifyListeners();
+    console.log(`Listeners notified`);
 
-  return id;
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      console.log(`Attempting to remove notification ${id}`);
+      removeNotification(id);
+    }, 5000);
+
+    return id;
+  } catch (error) {
+    console.error(`Error in showGameNotification:`, error);
+    return id;
+  }
 }
 
 // Function to remove a notification
@@ -60,7 +71,14 @@ export function removeNotification(id: string) {
 
 // Function to notify all listeners
 function notifyListeners() {
-  listeners.forEach((listener) => listener());
+  console.log(`Notifying ${listeners.length} listeners`);
+  listeners.forEach((listener) => {
+    try {
+      listener();
+    } catch (error) {
+      console.error(`Error in notification listener:`, error);
+    }
+  });
 }
 
 // Individual notification item
@@ -169,11 +187,22 @@ export function GameNotificationContainer() {
 
   useEffect(() => {
     // Subscribe to notification changes
-    const listener = () => setForceUpdate({});
+    const listener = () => {
+      console.log(
+        "GameNotificationContainer listener triggered, forcing update",
+      );
+      setForceUpdate({});
+    };
+
+    console.log("GameNotificationContainer mounted, adding listener");
     listeners.push(listener);
+
+    // Force an initial render to ensure the component is working
+    setForceUpdate({});
 
     return () => {
       // Unsubscribe on unmount
+      console.log("GameNotificationContainer unmounting, removing listener");
       listeners = listeners.filter((l) => l !== listener);
     };
   }, []);
