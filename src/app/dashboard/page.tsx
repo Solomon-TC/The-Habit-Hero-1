@@ -20,6 +20,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { DebugXPButton } from "@/components/debug-xp-button";
+import LevelProgress from "@/components/level-progress";
+import GameNotifications from "@/components/game-notifications";
 
 export default async function Dashboard() {
   const supabase = await createServerSupabaseClient();
@@ -132,6 +134,7 @@ export default async function Dashboard() {
 
   return (
     <SubscriptionCheck>
+      <GameNotifications />
       <DashboardNavbar />
       <main className="w-full bg-gray-50 min-h-screen">
         <div className="container mx-auto px-4 py-8 flex flex-col gap-8">
@@ -174,53 +177,53 @@ export default async function Dashboard() {
               userId={user.id}
             />
             <div className="mt-4">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    Level {userLevel}
-                  </CardTitle>
-                  <Star className="h-4 w-4 text-yellow-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>XP: {userXP}</span>
-                    <span>
-                      {xpInCurrentLevel}/{xpForNextLevel}
-                    </span>
-                  </div>
-                  <Progress value={levelProgress} className="h-2 bg-gray-200" />
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {100 - levelProgress}% to level {userLevel + 1}
-                  </p>
-                </CardContent>
-              </Card>
+              <LevelProgress
+                initialData={{
+                  level: userLevel,
+                  xp: userXP,
+                  xpForNextLevel,
+                  levelProgress,
+                  xpInCurrentLevel,
+                }}
+                userId={user.id}
+              />
             </div>
           </section>
 
-          {/* Main Content */}
-          <Tabs defaultValue="habits" className="w-full">
-            <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-4 mb-4">
-              <TabsTrigger value="habits">Habits</TabsTrigger>
-              <TabsTrigger value="goals">Goals</TabsTrigger>
-              <TabsTrigger value="achievements">Achievements</TabsTrigger>
-              <TabsTrigger value="profile">Profile</TabsTrigger>
-            </TabsList>
-            <TabsContent value="habits" className="space-y-4">
-              <HabitTracker habits={habitsWithProgress} userId={user.id} />
-            </TabsContent>
-            <TabsContent value="goals" className="space-y-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Your Goals</h2>
-                <Link href="/dashboard/goals">
-                  <Button variant="outline" size="sm">
-                    View All Goals
-                  </Button>
-                </Link>
-              </div>
+          {/* Main Content - New Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            {/* Habits Card */}
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Your Habits</CardTitle>
+                  <Link href="/dashboard/habits">
+                    <Button variant="outline" size="sm">
+                      View All
+                    </Button>
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4">
+                <HabitTracker habits={habitsWithProgress} userId={user.id} />
+              </CardContent>
+            </Card>
 
-              {goals.length === 0 ? (
-                <Card>
-                  <CardContent className="text-center py-8">
+            {/* Goals Card */}
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Your Goals</CardTitle>
+                  <Link href="/dashboard/goals">
+                    <Button variant="outline" size="sm">
+                      View All
+                    </Button>
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {goals.length === 0 ? (
+                  <div className="text-center py-4">
                     <p className="text-gray-600 mb-4">
                       You haven't set any goals yet
                     </p>
@@ -229,133 +232,141 @@ export default async function Dashboard() {
                         Create Your First Goal
                       </Button>
                     </Link>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {goals.slice(0, 3).map((goal) => (
+                      <Card key={goal.id} className="overflow-hidden">
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <CardTitle className="text-base">
+                              {goal.title}
+                            </CardTitle>
+                            {goal.category && (
+                              <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded">
+                                {goal.category}
+                              </span>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-2">
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Progress</span>
+                            <span>{goal.progress}%</span>
+                          </div>
+                          <Progress
+                            value={goal.progress}
+                            className="h-2 bg-gray-200"
+                          />
+
+                          {goal.milestones && goal.milestones.length > 0 && (
+                            <div className="mt-3">
+                              <p className="text-xs text-gray-500 mb-1">
+                                Next milestone:
+                              </p>
+                              <p className="text-sm">
+                                {goal.milestones.find((m) => !m.is_completed)
+                                  ?.title || "All milestones completed!"}
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Achievements Card */}
+          <Card className="mt-6 overflow-hidden">
+            <CardHeader>
+              <CardTitle>Your Achievements</CardTitle>
+              <CardDescription>
+                Complete habits and earn badges as you progress on your journey.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col items-center p-4 bg-purple-50 rounded-lg border border-purple-100">
+                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-2">
+                  <span className="text-2xl">🔥</span>
+                </div>
+                <h3 className="font-semibold">Streak Master</h3>
+                <p className="text-sm text-center text-gray-600">
+                  Maintain a 5-day streak
+                </p>
+              </div>
+              <div className="flex flex-col items-center p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                  <span className="text-2xl">⭐</span>
+                </div>
+                <h3 className="font-semibold">Early Bird</h3>
+                <p className="text-sm text-center text-gray-600">
+                  Complete a habit before 8am
+                </p>
+              </div>
+              <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-2">
+                  <span className="text-2xl">🏆</span>
+                </div>
+                <h3 className="font-semibold">Habit Champion</h3>
+                <p className="text-sm text-center text-gray-600">
+                  Complete all habits for a week
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Hidden Tabs for Profile */}
+          <div className="hidden">
+            <Tabs defaultValue="profile" className="w-full">
+              <TabsList className="grid w-full md:w-auto grid-cols-1 mb-4">
+                <TabsTrigger value="profile">Profile</TabsTrigger>
+              </TabsList>
+              <TabsContent value="profile" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <UserCircle className="text-purple-600" size={24} />
+                      User Profile
+                    </CardTitle>
+                    <CardDescription>
+                      Manage your account settings and preferences
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-500">
+                            Full Name
+                          </h3>
+                          <p className="text-base">
+                            {userData?.name || "Not set"}
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-medium text-gray-500">
+                            Email
+                          </h3>
+                          <p className="text-base">{user.email}</p>
+                        </div>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-4 overflow-hidden">
+                        <h3 className="text-sm font-medium text-gray-500 mb-2">
+                          Account Details
+                        </h3>
+                        <pre className="text-xs font-mono max-h-48 overflow-auto">
+                          {JSON.stringify(user, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {goals.slice(0, 4).map((goal) => (
-                    <Card key={goal.id} className="overflow-hidden">
-                      <CardHeader className="pb-2">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-base">
-                            {goal.title}
-                          </CardTitle>
-                          {goal.category && (
-                            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded">
-                              {goal.category}
-                            </span>
-                          )}
-                        </div>
-                      </CardHeader>
-                      <CardContent className="pt-2">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Progress</span>
-                          <span>{goal.progress}%</span>
-                        </div>
-                        <Progress
-                          value={goal.progress}
-                          className="h-2 bg-gray-200"
-                        />
-
-                        {goal.milestones && goal.milestones.length > 0 && (
-                          <div className="mt-3">
-                            <p className="text-xs text-gray-500 mb-1">
-                              Next milestone:
-                            </p>
-                            <p className="text-sm">
-                              {goal.milestones.find((m) => !m.is_completed)
-                                ?.title || "All milestones completed!"}
-                            </p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent value="achievements" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Your Achievements</CardTitle>
-                  <CardDescription>
-                    Complete habits and earn badges as you progress on your
-                    journey.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="flex flex-col items-center p-4 bg-purple-50 rounded-lg border border-purple-100">
-                    <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-2">
-                      <span className="text-2xl">🔥</span>
-                    </div>
-                    <h3 className="font-semibold">Streak Master</h3>
-                    <p className="text-sm text-center text-gray-600">
-                      Maintain a 5-day streak
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-center p-4 bg-blue-50 rounded-lg border border-blue-100">
-                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                      <span className="text-2xl">⭐</span>
-                    </div>
-                    <h3 className="font-semibold">Early Bird</h3>
-                    <p className="text-sm text-center text-gray-600">
-                      Complete a habit before 8am
-                    </p>
-                  </div>
-                  <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-2">
-                      <span className="text-2xl">🏆</span>
-                    </div>
-                    <h3 className="font-semibold">Habit Champion</h3>
-                    <p className="text-sm text-center text-gray-600">
-                      Complete all habits for a week
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="profile" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <UserCircle className="text-purple-600" size={24} />
-                    User Profile
-                  </CardTitle>
-                  <CardDescription>
-                    Manage your account settings and preferences
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500">
-                          Full Name
-                        </h3>
-                        <p className="text-base">
-                          {userData?.name || "Not set"}
-                        </p>
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-medium text-gray-500">
-                          Email
-                        </h3>
-                        <p className="text-base">{user.email}</p>
-                      </div>
-                    </div>
-                    <div className="bg-muted/50 rounded-lg p-4 overflow-hidden">
-                      <h3 className="text-sm font-medium text-gray-500 mb-2">
-                        Account Details
-                      </h3>
-                      <pre className="text-xs font-mono max-h-48 overflow-auto">
-                        {JSON.stringify(user, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+              </TabsContent>
+            </Tabs>
+          </div>
 
           {/* Debug XP Tools */}
           <div className="mt-8">

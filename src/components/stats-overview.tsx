@@ -61,30 +61,34 @@ export default function StatsOverview({
         .gte("completed_at", today.toISOString());
 
       // Process habits with their logs
-      const habitsWithProgress = habits.map((habit) => {
-        const habitLogs = logs.filter((log) => log.habit_id === habit.id);
+      const habitsWithProgress =
+        habits && habits.length > 0
+          ? habits.map((habit) => {
+              const habitLogs = logs.filter((log) => log.habit_id === habit.id);
 
-        const todayProgress = habitLogs.reduce(
-          (sum, log) => sum + (log.count || 0),
-          0,
-        );
-        const isCompleted = todayProgress >= habit.target_count;
+              const todayProgress = habitLogs.reduce(
+                (sum, log) => sum + (log.count || 0),
+                0,
+              );
+              const isCompleted = todayProgress >= habit.target_count;
 
-        return {
-          ...habit,
-          isCompleted,
-        };
-      });
+              return {
+                ...habit,
+                isCompleted,
+              };
+            })
+          : [];
 
       // Calculate stats
-      const completedHabits = habitsWithProgress.filter(
-        (habit) => habit.isCompleted,
-      ).length;
-      const totalHabits = habitsWithProgress.length;
+      const completedHabits =
+        habitsWithProgress && habitsWithProgress.length > 0
+          ? habitsWithProgress.filter((habit) => habit.isCompleted).length
+          : 0;
+      const totalHabits = habitsWithProgress ? habitsWithProgress.length : 0;
       const completionRate =
         totalHabits > 0 ? Math.round((completedHabits / totalHabits) * 100) : 0;
       const highestStreak =
-        habitsWithProgress.length > 0
+        habitsWithProgress && habitsWithProgress.length > 0
           ? Math.max(...habitsWithProgress.map((h) => h.streak || 0))
           : 0;
 
@@ -156,7 +160,12 @@ export default function StatsOverview({
           <TrendingUp className="h-4 w-4 text-green-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.completionRate}%</div>
+          <div className="w-full bg-muted rounded-full h-2.5 mb-2">
+            <div
+              className="bg-green-500 h-2.5 rounded-full transition-all duration-500 ease-in-out"
+              style={{ width: `${stats.completionRate}%` }}
+            ></div>
+          </div>
           <p className="text-xs text-muted-foreground">Today's progress</p>
         </CardContent>
       </Card>

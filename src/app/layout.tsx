@@ -27,6 +27,7 @@ export default function RootLayout({
       <body className={inter.className}>
         {children}
         <ClientTempoInit />
+        {/* The GameNotificationContainer will be rendered client-side */}
       </body>
     </html>
   );

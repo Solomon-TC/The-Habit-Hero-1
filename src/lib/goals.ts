@@ -124,6 +124,7 @@ export async function updateGoalProgress(goalId: string, progress: number) {
           xpAwarded: xpValue,
           error: xpResult.error,
           goalName: goal.title || "Goal",
+          type: "goal",
         };
       }
 
@@ -144,6 +145,7 @@ export async function updateGoalProgress(goalId: string, progress: number) {
         leveledUp: xpResult.leveledUp,
         newLevel: xpResult.newLevel,
         goalName: goal.title || "Goal",
+        type: "goal",
       };
     } catch (error) {
       console.error(`Unexpected error awarding XP for goal:`, error);
@@ -152,6 +154,7 @@ export async function updateGoalProgress(goalId: string, progress: number) {
         xpAwarded: xpValue,
         error: String(error),
         goalName: goal.title || "Goal",
+        type: "goal",
       };
     }
   }

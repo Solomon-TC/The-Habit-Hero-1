@@ -136,12 +136,14 @@ export async function completeMilestone(
     // Recalculate the goal progress
     await calculateGoalProgress(goalId);
 
+    // Return detailed information for notifications
     return {
       data,
       xpAwarded: xpValue,
       leveledUp: xpResult?.leveledUp || false,
       newLevel: xpResult?.newLevel || 1,
       milestoneName: milestone.title || "Milestone",
+      type: "milestone",
     };
   } catch (error) {
     console.error(`Unexpected error awarding XP for milestone:`, error);
@@ -150,6 +152,7 @@ export async function completeMilestone(
       xpAwarded: xpValue,
       error: String(error),
       milestoneName: milestone.title || "Milestone",
+      type: "milestone",
     };
   }
 }

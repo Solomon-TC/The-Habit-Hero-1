@@ -80,6 +80,8 @@ export function LevelUpToast({ newLevel, xpGained }: LevelUpToastProps) {
   return null;
 }
 
+import { showGameNotification } from "./game-notification";
+
 export function showGameToast({
   type,
   title,
@@ -87,34 +89,25 @@ export function showGameToast({
   leveledUp = false,
   newLevel = 1,
 }: ShowGameToastProps) {
-  // Define icon and colors based on type
-  let icon;
-  let bgColor = "bg-gradient-to-r from-green-50 to-green-100 border-green-200";
+  // Log the notification call for debugging
+  console.log(
+    `Showing game notification: ${type} - ${title} - XP: ${xpGained}`,
+  );
 
-  switch (type) {
-    case "habit":
-      icon = <Check className="h-5 w-5 text-green-500" />;
-      bgColor = "bg-gradient-to-r from-green-50 to-green-100 border-green-200";
-      break;
-    case "milestone":
-      icon = <Star className="h-5 w-5 text-blue-500" />;
-      bgColor = "bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200";
-      break;
-    case "goal":
-      icon = <Trophy className="h-5 w-5 text-purple-500" />;
-      bgColor =
-        "bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200";
-      break;
-    case "level":
-      icon = <TrendingUp className="h-5 w-5 text-amber-500" />;
-      bgColor = "bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200";
-      break;
-  }
+  // Use the new game notification system
+  showGameNotification({
+    type,
+    title,
+    xpGained,
+    leveledUp,
+    newLevel,
+  });
 
+  // Also use the toast system as a fallback for now
+  // This can be removed once the new notification system is confirmed working
   toast({
     title: (
       <div className="flex items-center gap-2">
-        {icon}
         <span>{title}</span>
       </div>
     ),
@@ -132,7 +125,7 @@ export function showGameToast({
         )}
       </div>
     ),
-    className: bgColor,
-    duration: 5000,
+    duration: 3000,
+    variant: "default",
   });
 }

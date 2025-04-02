@@ -8,7 +8,7 @@ import HabitForm from "./habit-form";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import Link from "next/link";
-import { useLevelUpToast } from "./level-up-toast";
+import { useLevelUpToast, showGameToast } from "./level-up-toast";
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
 
 interface HabitTrackerProps {
@@ -235,8 +235,20 @@ export default function HabitTracker({ habits, userId }: HabitTrackerProps) {
         ),
       );
 
+      // Always show a notification for XP gained
+      if (result && result.xpGained) {
+        // Trigger the game toast notification
+        showGameToast({
+          type: "habit",
+          title: `Habit Completed: ${habit.name || "Habit"}`,
+          xpGained: result.xpGained,
+          leveledUp: result.leveledUp || false,
+          newLevel: result.newLevel || 1,
+        });
+      }
+
       // Check if the user leveled up from the result
-      if (result.leveledUp) {
+      if (result && result.leveledUp) {
         // Use both the local notification and the toast system
         setLevelUpInfo({
           level: result.newLevel,
@@ -323,7 +335,9 @@ export default function HabitTracker({ habits, userId }: HabitTrackerProps) {
   // Otherwise use the HabitList component
   return (
     <>
-      <HabitList habits={localHabits} userId={userId} />
+      <div className="w-full overflow-auto">
+        <HabitList habits={localHabits} userId={userId} />
+      </div>
       {renderLevelUpNotification()}
     </>
   );

@@ -88,13 +88,18 @@ export default function HabitCard({ habit, userId }: HabitCardProps) {
 
       console.log("Habit completion result:", data);
 
-      // Show game toast notification
+      // Show game toast notification with explicit values
+      const xpValue = data.xpGained || localHabit.xp_value || 10;
+      console.log(
+        `Triggering habit completion notification with ${xpValue} XP`,
+      );
+
       showGameToast({
         type: "habit",
         title: `${localHabit.name} completed!`,
-        xpGained: data.xpGained || localHabit.xp_value || 10,
+        xpGained: xpValue,
         leveledUp: data.leveledUp || false,
-        newLevel: data.newLevel,
+        newLevel: data.newLevel || 1,
       });
 
       console.log("Habit completion response:", data);
@@ -257,16 +262,7 @@ export default function HabitCard({ habit, userId }: HabitCardProps) {
             <div className="mt-2 text-sm text-red-500">Error: {error}</div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-between pt-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.refresh()}
-            disabled={isLoading}
-          >
-            <Icon name="refresh" className="mr-1 h-4 w-4" />
-            Refresh
-          </Button>
+        <CardFooter className="flex justify-end pt-2">
           <Button
             className={`${localHabit.color ? `bg-${localHabit.color}-600 hover:bg-${localHabit.color}-700` : "bg-purple-600 hover:bg-purple-700"}`}
             size="sm"

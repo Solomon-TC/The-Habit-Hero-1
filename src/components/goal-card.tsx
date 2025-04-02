@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser-client";
 import { Goal, Milestone } from "@/types/goal";
@@ -24,6 +24,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
+import { showGameToast } from "./level-up-toast";
 
 interface GoalCardProps {
   goal: Goal;
@@ -67,18 +68,67 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
 
   const toggleMilestoneCompletion = async (milestone: Milestone) => {
     const newStatus = !milestone.is_completed;
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
 
-    const { error } = await supabase
-      .from("milestones")
-      .update({
-        is_completed: newStatus,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", milestone.id);
-
-    if (error) {
-      console.error("Error updating milestone:", error);
+    if (!userId) {
+      console.error("User ID not found");
       return;
+    }
+
+    if (newStatus) {
+      // If completing the milestone, use the server endpoint to award XP
+      const response = await fetch(`/api/milestones/complete`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          milestoneId: milestone.id,
+          goalId: goal.id,
+          userId: userId,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log("Milestone completion result:", result);
+
+        // Show notification for XP gained
+        if (result.xpAwarded) {
+          const xpValue = result.xpAwarded || 20;
+          console.log(`Triggering milestone notification with ${xpValue} XP`);
+
+          // Use window.alert for a guaranteed notification
+          window.alert(
+            `Milestone Achieved: ${milestone.title}\n+${xpValue} XP gained${result.leveledUp ? `\nYou reached level ${result.newLevel || 1}!` : ""}`,
+          );
+
+          showGameToast({
+            type: "milestone",
+            title: `Milestone Achieved: ${milestone.title}`,
+            xpGained: xpValue,
+            leveledUp: result.leveledUp || false,
+            newLevel: result.newLevel || 1,
+          });
+        }
+      } else {
+        console.error("Error completing milestone via API");
+      }
+    } else {
+      // If uncompleting, just update the database directly
+      const { error } = await supabase
+        .from("milestones")
+        .update({
+          is_completed: newStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", milestone.id);
+
+      if (error) {
+        console.error("Error updating milestone:", error);
+        return;
+      }
     }
 
     // Update local state
@@ -107,6 +157,26 @@ export default function GoalCard({ goal, onDelete }: GoalCardProps) {
 
     if (progressError) {
       console.error("Error updating goal progress:", progressError);
+    }
+
+    // If goal is now completed (100%), show a notification
+    if (newProgress === 100 && goalProgress !== 100) {
+      // Fetch the updated goal to get XP value
+      const { data: updatedGoal } = await supabase
+        .from("goals")
+        .select("*")
+        .eq("id", goal.id)
+        .single();
+
+      if (updatedGoal) {
+        const xpValue = updatedGoal.xp_value || 50; // Default to 50 XP
+        showGameToast({
+          type: "goal",
+          title: `Goal Accomplished: ${goal.title}`,
+          xpGained: xpValue,
+          leveledUp: false, // We don't know this client-side
+        });
+      }
     }
 
     router.refresh();
