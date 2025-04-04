@@ -146,7 +146,11 @@ export default async function Dashboard() {
             <div className="flex justify-between items-center">
               <h1 className="text-3xl font-bold">
                 Welcome,{" "}
-                {userData?.name || user.email?.split("@")[0] || "Adventurer"}!
+                {userData?.full_name ||
+                  userData?.name ||
+                  user.email?.split("@")[0] ||
+                  "Adventurer"}
+                !
               </h1>
               <div className="flex gap-2">
                 <Calendar className="text-purple-600" />

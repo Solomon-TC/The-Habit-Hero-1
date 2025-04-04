@@ -380,10 +380,10 @@ export async function getFriends() {
       // Continue anyway, as the function might not exist in all environments
     }
 
-    // Get friend user details
+    // Get friend user details with full_name included
     const { data: friends, error: friendsError } = await supabase
       .from("users")
-      .select("id, name, email, avatar_url, created_at")
+      .select("id, name, full_name, email, avatar_url, created_at, level, xp")
       .in("id", friendIds);
 
     console.log("[lib/friends] Friend IDs for query:", friendIds);

@@ -33,24 +33,36 @@ export function UserSettingsForm({
     try {
       const supabase = createBrowserSupabaseClient();
 
-      // Update the user's display name
+      // Update the user's display name in both name and full_name fields
       const { error } = await supabase
         .from("users")
-        .update({ name: displayName, updated_at: new Date().toISOString() })
+        .update({
+          name: displayName,
+          full_name: displayName, // Ensure both fields are updated for consistency
+          updated_at: new Date().toISOString(),
+        })
         .eq("id", userId);
+
+      // Force refresh of user data in real-time
+      await supabase.auth.refreshSession();
 
       if (error) {
         throw error;
       }
 
-      setSuccess("Settings updated successfully!");
+      // Show success message
+      setSuccess(
+        "Settings updated successfully! Your display name has been updated.",
+      );
+
+      // Show game toast notification
       showGameToast({
         type: "milestone",
         title: "Settings Updated",
         xpGained: 0,
       });
 
-      // Refresh the page to show updated data
+      // Force refresh to show updated name immediately across all components
       router.refresh();
     } catch (err: any) {
       console.error("Error updating settings:", err);

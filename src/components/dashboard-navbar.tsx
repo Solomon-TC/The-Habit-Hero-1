@@ -53,6 +53,27 @@ export default function DashboardNavbar() {
       }
     }
     getUserData();
+
+    // Set up real-time subscription to user data changes
+    const channel = supabase
+      .channel("user-updates")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "users",
+          filter: `id=eq.${supabase.auth.getUser().then(({ data }) => data.user?.id)}`,
+        },
+        (payload) => {
+          setUserData(payload.new);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const navItems = [

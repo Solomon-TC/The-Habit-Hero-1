@@ -325,7 +325,12 @@ export default function HabitTracker({ habits, userId }: HabitTrackerProps) {
           </CardContent>
         </Card>
         {showAddForm && (
-          <HabitForm userId={userId} onClose={() => setShowAddForm(false)} />
+          <HabitForm
+            open={showAddForm}
+            onOpenChange={setShowAddForm}
+            userId={userId}
+            mode="create"
+          />
         )}
         {renderLevelUpNotification()}
       </div>

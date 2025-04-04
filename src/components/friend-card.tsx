@@ -16,6 +16,7 @@ interface FriendCardProps {
 interface FriendData {
   id: string;
   name: string;
+  full_name?: string;
   email: string;
   level: number;
   xp: number;
@@ -63,10 +64,10 @@ export default function FriendCard({
 
         const supabase = createBrowserSupabaseClient();
 
-        // Fetch friend's user data
+        // Fetch friend's user data with full_name included
         const { data: userData, error: userError } = await supabase
           .from("users")
-          .select("id, name, email, level, xp")
+          .select("id, name, full_name, email, level, xp")
           .eq("id", friendId)
           .maybeSingle();
 
@@ -95,7 +96,13 @@ export default function FriendCard({
           return;
         }
 
-        setFriendData(userData);
+        // Use full_name if available, otherwise fall back to name
+        const displayData = {
+          ...userData,
+          name: userData.full_name || userData.name || "Unknown",
+        };
+
+        setFriendData(displayData);
 
         // Only fetch achievements if we have valid user data
         if (userData && userData.id) {
