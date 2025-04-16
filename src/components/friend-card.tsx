@@ -20,6 +20,7 @@ interface FriendData {
   email: string;
   level: number;
   xp: number;
+  avatar_url?: string | null;
 }
 
 interface Achievement {
@@ -46,72 +47,116 @@ export default function FriendCard({
       setError(null);
 
       try {
-        // If we already have name and email from props, create a basic profile
-        if (friendName || friendEmail) {
-          setFriendData({
-            id: friendId,
-            name: friendName || "Unknown",
-            email: friendEmail || "No email available",
-            level: 1,
-            xp: 0,
-          });
+        const supabase = createBrowserSupabaseClient();
+        console.log("Fetching friend data for ID:", friendId);
 
-          // Set empty achievements for now
-          setAchievements([]);
-          setIsLoading(false);
-          return;
+        // First, try to ensure the friend user exists
+        try {
+          await supabase.rpc("ensure_friend_user_exists", {
+            friend_id: friendId,
+          });
+        } catch (err) {
+          console.log("Note: ensure_friend_user_exists may not exist yet", err);
         }
 
-        const supabase = createBrowserSupabaseClient();
+        // Try multiple methods to get user data in sequence until one works
+        let effectiveUserData = null;
+        let lastError = null;
 
-        // Fetch friend's user data with full_name included
+        // 1. Try direct query first as it's most reliable
         const { data: userData, error: userError } = await supabase
           .from("users")
-          .select("id, name, full_name, email, level, xp")
+          .select(
+            "id, name, full_name, email, level, xp, avatar_url, created_at",
+          )
           .eq("id", friendId)
           .maybeSingle();
 
-        if (userError) {
-          console.error(
-            "Error fetching friend data:",
-            userError.message || JSON.stringify(userError),
+        if (!userError && userData) {
+          console.log("Direct query successful:", userData);
+          effectiveUserData = userData;
+        } else {
+          lastError = userError;
+          console.log("Direct query failed:", userError);
+
+          // 2. Try get_user_by_id function
+          const { data: getUserData, error: getUserError } = await supabase.rpc(
+            "get_user_by_id",
+            { user_id: friendId },
           );
-          setError(`Error: ${userError.message || "Unknown error"}`);
-          setIsLoading(false);
-          return;
+
+          if (!getUserError && getUserData && getUserData.length > 0) {
+            console.log("get_user_by_id successful:", getUserData);
+            effectiveUserData = getUserData[0];
+          } else {
+            lastError = getUserError;
+            console.log("get_user_by_id failed:", getUserError);
+
+            // 3. Try search_user_by_id function as last resort
+            try {
+              const { data: searchUserData, error: searchUserError } =
+                await supabase.rpc("search_user_by_id", { user_id: friendId });
+
+              if (
+                !searchUserError &&
+                searchUserData &&
+                searchUserData.length > 0
+              ) {
+                console.log("search_user_by_id successful:", searchUserData);
+                effectiveUserData = searchUserData[0];
+              } else {
+                lastError = searchUserError;
+                console.log("search_user_by_id failed:", searchUserError);
+              }
+            } catch (searchErr) {
+              console.log("search_user_by_id exception:", searchErr);
+              lastError = searchErr;
+            }
+          }
         }
 
-        if (!userData) {
+        console.log("Final effective user data:", effectiveUserData);
+
+        if (!effectiveUserData) {
           console.warn("No user data found for friend ID:", friendId);
-          // Create fallback data from props
+
+          // Create fallback data from props with better defaults
           setFriendData({
             id: friendId,
-            name: friendName || "Unknown",
-            email: friendEmail || "No email available",
+            name: friendName || "Friend", // Use "Friend" instead of "Unknown"
+            email: friendEmail || "",
             level: 1,
             xp: 0,
+            avatar_url: null,
           });
           setAchievements([]);
           setIsLoading(false);
           return;
         }
 
-        // Use full_name if available, otherwise fall back to name
+        // Use full_name if available, otherwise fall back to name or email
+        const displayName =
+          effectiveUserData.full_name ||
+          effectiveUserData.name ||
+          friendName ||
+          "Unknown";
+
         const displayData = {
-          ...userData,
-          name: userData.full_name || userData.name || "Unknown",
+          ...effectiveUserData,
+          name: displayName,
         };
 
+        console.log("Setting friend data:", displayData);
         setFriendData(displayData);
 
         // Only fetch achievements if we have valid user data
-        if (userData && userData.id) {
+        if (effectiveUserData && effectiveUserData.id) {
           // Fetch recent achievements (completed habits, milestones, goals)
           // First, fetch recent habit completions
           const { data: habitLogs, error: habitError } = await supabase
             .from("habit_logs")
             .select("id, habit_id, completed_at, xp_awarded")
-            .eq("user_id", userData.id)
+            .eq("user_id", effectiveUserData.id)
             .order("completed_at", { ascending: false })
             .limit(3);
 
@@ -245,9 +290,28 @@ export default function FriendCard({
     <Card className="w-full hover:border-purple-200 transition-all">
       <CardHeader className="pb-2">
         <div className="flex justify-between items-center">
-          <CardTitle className="text-lg">
-            {friendData.name || friendData.email}
-          </CardTitle>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100">
+              {friendData.avatar_url ? (
+                <img
+                  src={friendData.avatar_url}
+                  alt={`${friendData.name}'s avatar`}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <img
+                  src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${friendData.name || friendData.email || friendId}`}
+                  alt={`${friendData.name}'s avatar`}
+                  className="h-full w-full object-cover"
+                />
+              )}
+            </div>
+            <CardTitle className="text-lg">
+              {friendData.name !== "Unknown"
+                ? friendData.name
+                : friendData.email || "Friend"}
+            </CardTitle>
+          </div>
           <Badge variant="outline" className="bg-purple-50">
             Level {friendData.level}
           </Badge>

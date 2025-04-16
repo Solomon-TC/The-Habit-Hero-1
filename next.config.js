@@ -2,7 +2,11 @@
 
 const nextConfig = {
   images: {
-    domains: ["api.dicebear.com", "images.unsplash.com"],
+    domains: [
+      "api.dicebear.com",
+      "images.unsplash.com",
+      "mkrahlftoiiugjfesudw.supabase.co",
+    ],
   },
   // Ensure SWC is used for compilation
   swcMinify: true,

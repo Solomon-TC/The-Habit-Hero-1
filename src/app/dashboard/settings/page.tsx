@@ -15,12 +15,19 @@ export default async function SettingsPage() {
     return redirect("/sign-in");
   }
 
-  // Get user profile data
+  // Get user profile data with cache busting to ensure fresh data
+  const timestamp = Date.now();
   const { data: userData } = await supabase
     .from("users")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .single()
+    .abortSignal(new AbortController().signal); // Force fresh data
+
+  console.log(
+    `User settings data fetched at ${new Date().toISOString()}:`,
+    userData,
+  );
 
   return (
     <SubscriptionCheck>

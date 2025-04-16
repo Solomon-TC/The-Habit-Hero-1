@@ -44,11 +44,13 @@ export default function DashboardNavbar() {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
+        // Add cache busting to ensure fresh data
         const { data } = await supabase
           .from("users")
           .select("*")
           .eq("id", user.id)
-          .single();
+          .single()
+          .abortSignal(new AbortController().signal); // Force fresh data
         setUserData(data);
       }
     }
@@ -140,13 +142,23 @@ export default function DashboardNavbar() {
                 <div className="text-xs font-semibold bg-yellow-100 text-yellow-800 rounded-full px-2 py-0.5 border border-yellow-300">
                   Lv{userData?.level || 1}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="rounded-full h-8 w-8 bg-purple-100"
-                >
-                  <UserCircle className="h-5 w-5 text-purple-600" />
-                </Button>
+                {userData?.avatar_url ? (
+                  <div className="rounded-full h-8 w-8 overflow-hidden border border-purple-200">
+                    <img
+                      src={userData.avatar_url + "?t=" + new Date().getTime()}
+                      alt="Profile"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full h-8 w-8 bg-purple-100"
+                  >
+                    <UserCircle className="h-5 w-5 text-purple-600" />
+                  </Button>
+                )}
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

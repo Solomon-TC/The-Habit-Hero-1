@@ -285,32 +285,23 @@ function FriendsList() {
                   friend.users?.name || friend.users?.email || "Unknown",
                 );
                 console.log("Friend data:", friend);
+                // Extract all possible name and email values for better fallbacks
+                const possibleName =
+                  friend.users?.name ||
+                  friend.name ||
+                  friend.users?.email ||
+                  "";
+                const possibleEmail = friend.users?.email || friend.email || "";
+
                 return (
                   <div
                     key={uniqueKey}
                     className="border rounded-lg p-4 hover:border-purple-200 transition-all"
                   >
-                    <h3 className="font-medium">
-                      {friend.users?.name ||
-                        friend.users?.email ||
-                        "Unknown Friend"}
-                    </h3>
-                    {friend.users?.email && (
-                      <p className="text-sm text-gray-500">
-                        {friend.users.email}
-                      </p>
-                    )}
-                    {friend.users?.level && (
-                      <div className="mt-2">
-                        <span className="text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
-                          Level {friend.users.level}
-                        </span>
-                      </div>
-                    )}
                     <FriendCard
                       friendId={friend.friend_id}
-                      friendName={friend.users?.name}
-                      friendEmail={friend.users?.email}
+                      friendName={possibleName}
+                      friendEmail={possibleEmail}
                     />
                   </div>
                 );

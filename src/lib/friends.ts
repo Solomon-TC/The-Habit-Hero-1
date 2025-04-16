@@ -380,6 +380,18 @@ export async function getFriends() {
       // Continue anyway, as the function might not exist in all environments
     }
 
+    // Try to ensure all friend users exist
+    try {
+      for (const friendId of friendIds) {
+        await supabase.rpc("ensure_friend_user_exists", {
+          friend_id: friendId,
+        });
+      }
+    } catch (error) {
+      console.error("[lib/friends] Error ensuring friend users exist:", error);
+      // Continue anyway, as the function might not exist in all environments
+    }
+
     // Get friend user details with full_name included
     const { data: friends, error: friendsError } = await supabase
       .from("users")
