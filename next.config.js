@@ -17,6 +17,18 @@ const nextConfig = {
         type: "memory",
       };
     }
+
+    // Add rule to handle Deno imports in Supabase Edge Functions
+    config.module.rules.push({
+      test: /\.ts$/,
+      include: /supabase\/functions/,
+      use: [
+        {
+          loader: "ignore-loader",
+        },
+      ],
+    });
+
     return config;
   },
 };
