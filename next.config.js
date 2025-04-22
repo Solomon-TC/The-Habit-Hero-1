@@ -22,7 +22,6 @@ const nextConfig = {
     config.module.rules.push({
       test: /\.ts$/,
       include: /supabase\/functions/,
-      exclude: /\.js$/,
       use: "null-loader",
     });
 
