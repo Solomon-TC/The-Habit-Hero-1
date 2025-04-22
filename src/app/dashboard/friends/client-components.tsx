@@ -4,7 +4,58 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Flame, Check, X, Trophy } from "lucide-react";
+import { Flame, Check, X, Trophy, Star, Activity } from "lucide-react";
+
+function getDisplayName(
+  userData: any,
+  fallbackName?: string | null,
+  userId?: string,
+): string {
+  if (
+    userData?.name &&
+    userData.name !== "null" &&
+    userData.name !== "undefined" &&
+    userData.name.trim() !== "" &&
+    !userData.name.includes("-") &&
+    userData.name.length < 30 &&
+    userData.name !== userId
+  ) {
+    return userData.name;
+  }
+
+  if (
+    userData?.full_name &&
+    userData.full_name !== "null" &&
+    userData.full_name !== "undefined" &&
+    userData.full_name.trim() !== ""
+  ) {
+    return userData.full_name;
+  }
+
+  if (
+    userData?.email &&
+    userData.email !== "null" &&
+    userData.email !== "undefined" &&
+    userData.email.trim() !== ""
+  ) {
+    const emailParts = userData.email.split("@");
+    if (emailParts.length > 0 && emailParts[0].trim() !== "") {
+      return emailParts[0];
+    }
+  }
+
+  if (
+    fallbackName &&
+    fallbackName.trim() !== "" &&
+    !fallbackName.includes("-") &&
+    fallbackName.length < 30
+  ) {
+    return fallbackName;
+  }
+
+  return userId ? `User ${userId.substring(0, 8)}` : "Unknown User";
+}
+
 import { getFriends, getPendingFriendRequests } from "@/lib/friends";
 import { createBrowserSupabaseClient } from "@/lib/supabase-browser";
 import {
@@ -17,7 +68,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/client-card";
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import FriendCard from "@/components/friend-card";
 
 function FriendRequests() {
@@ -26,7 +78,6 @@ function FriendRequests() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  // Function to manually refresh the requests list
   const refreshRequests = () => {
     setLoading(true);
     setError(null);
@@ -36,7 +87,6 @@ function FriendRequests() {
   useEffect(() => {
     async function loadRequests() {
       try {
-        // Force a small delay to ensure DB operations have completed
         await new Promise((resolve) => setTimeout(resolve, 500));
         const { requests: friendRequests } = await getPendingFriendRequests();
         setRequests(friendRequests || []);
@@ -153,7 +203,6 @@ function FriendsList() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  // Function to manually refresh the friends list
   const refreshFriends = () => {
     setLoading(true);
     setError(null);
@@ -166,7 +215,6 @@ function FriendsList() {
         console.log("[FriendsList] Loading friends...");
         setLoading(true);
 
-        // Direct fetch from Supabase to debug
         const supabase = createBrowserSupabaseClient();
         const { data: userData } = await supabase.auth.getUser();
 
@@ -178,45 +226,144 @@ function FriendsList() {
 
         console.log("Current user ID:", userData.user.id);
 
-        // Direct query to get friends
-        const { data: directFriends, error: directError } = await supabase
-          .from("friends")
-          .select(
-            "friend_id, users!friends_friend_id_fkey(id, email, name, level, xp)",
-          )
-          .eq("user_id", userData.user.id);
+        // Use the direct get_friends function
+        const { data: directFriends, error: directError } = await supabase.rpc(
+          "get_friends",
+          { user_id: userData.user.id },
+        );
 
         if (directError) {
-          console.error("Direct query error:", directError);
-          setError("Database error: " + directError.message);
+          console.error("Error using get_friends function:", directError);
+
+          // Fallback to direct query
+          const { data: friendships, error: friendshipsError } = await supabase
+            .from("friends")
+            .select("friend_id")
+            .eq("user_id", userData.user.id);
+
+          if (friendshipsError) {
+            console.error("Error fetching friendships:", friendshipsError);
+            throw friendshipsError;
+          }
+
+          if (!friendships || friendships.length === 0) {
+            console.log("No friends found");
+            setFriends([]);
+            setLoading(false);
+            return;
+          }
+
+          // Get user details for each friend
+          const friendIds = friendships.map((f) => f.friend_id);
+          const { data: friendUsers, error: usersError } = await supabase
+            .from("users")
+            .select(
+              "id, name, full_name, email, avatar_url, level, xp, display_name",
+            )
+            .in("id", friendIds);
+
+          if (usersError) {
+            console.error("Error fetching friend user details:", usersError);
+            throw usersError;
+          }
+
+          // Format the data to match the expected structure
+          const fallbackFriends = friendships.map((friend) => {
+            const userData =
+              friendUsers?.find((u) => u.id === friend.friend_id) || {};
+            const displayName =
+              userData.display_name ||
+              userData.name ||
+              userData.full_name ||
+              (userData.email
+                ? userData.email.split("@")[0]
+                : `User ${friend.friend_id.substring(0, 8)}`);
+
+            return {
+              friend_id: friend.friend_id,
+              name: displayName,
+              full_name: userData.full_name,
+              email: userData.email,
+              avatar_url: userData.avatar_url,
+              level: userData.level || 1,
+              xp: userData.xp || 0,
+              display_name: displayName,
+            };
+          });
+
+          setFriends(
+            fallbackFriends.map((friend) => ({
+              friend_id: friend.friend_id,
+              users: {
+                id: friend.friend_id,
+                name: friend.name,
+                full_name: friend.full_name,
+                email: friend.email,
+                avatar_url: friend.avatar_url,
+                level: friend.level,
+                xp: friend.xp,
+                display_name: friend.display_name,
+              },
+            })),
+          );
+          setLoading(false);
           return;
         }
 
-        console.log("Direct friends query result:", directFriends);
+        console.log("Fetched friend IDs:", directFriends);
 
-        if (directFriends && directFriends.length > 0) {
-          setFriends(directFriends);
-          setError(null);
-        } else {
-          // Try the regular function as fallback
-          const { friends: friendsList } = await getFriends();
-          console.log(
-            "[FriendsList] Loaded friends via function:",
-            friendsList,
-          );
-
-          if (
-            friendsList &&
-            Array.isArray(friendsList) &&
-            friendsList.length > 0
-          ) {
-            setFriends(friendsList);
-            setError(null);
-          } else {
-            setFriends([]);
-            console.log("No friends found after multiple attempts");
-          }
+        if (!directFriends || directFriends.length === 0) {
+          console.log("No friends found");
+          setFriends([]);
+          setLoading(false);
+          return;
         }
+
+        // Get user details for each friend
+        const friendIds = directFriends.map((f) => f.friend_id);
+        const { data: friendUsers, error: usersError } = await supabase
+          .from("users")
+          .select(
+            "id, name, full_name, email, avatar_url, level, xp, display_name",
+          )
+          .in("id", friendIds);
+
+        if (usersError) {
+          console.error("Error fetching friend user details:", usersError);
+          throw usersError;
+        }
+
+        console.log("Fetched friend user details:", friendUsers);
+
+        // Format the data to match the expected structure
+        const formattedFriends = directFriends.map((friend) => {
+          const userData =
+            friendUsers?.find((u) => u.id === friend.friend_id) || {};
+          const displayName =
+            userData.display_name ||
+            userData.name ||
+            userData.full_name ||
+            (userData.email
+              ? userData.email.split("@")[0]
+              : `User ${friend.friend_id.substring(0, 8)}`);
+
+          return {
+            friend_id: friend.friend_id,
+            users: {
+              id: friend.friend_id,
+              name: displayName,
+              full_name: userData.full_name,
+              email: userData.email,
+              avatar_url: userData.avatar_url,
+              level: userData.level || 1,
+              xp: userData.xp || 0,
+              display_name: displayName,
+            },
+          };
+        });
+
+        setFriends(formattedFriends);
+        setError(null);
       } catch (e) {
         console.error("[FriendsList] Error loading friends:", e);
         setError(
@@ -245,12 +392,6 @@ function FriendsList() {
     );
   }
 
-  console.log(
-    "[FriendsList] Rendering friends list with",
-    friends?.length || 0,
-    "friends",
-  );
-
   return (
     <Card>
       <CardHeader>
@@ -277,33 +418,130 @@ function FriendsList() {
             {friends
               .filter((friend) => friend && friend.friend_id)
               .map((friend: any) => {
-                // Ensure we have a unique key by using friend_id or a fallback
                 const uniqueKey = friend.friend_id || `friend-${Math.random()}`;
+
+                const userData = friend.users || {};
+                console.log("Raw userData from query:", userData);
+
+                let updatedUserData = { ...userData };
+
                 console.log(
-                  "Rendering friend card for:",
-                  friend.friend_id,
-                  friend.users?.name || friend.users?.email || "Unknown",
+                  `Friend ID ${friend.friend_id} raw userData:`,
+                  updatedUserData,
                 );
-                console.log("Friend data:", friend);
-                // Extract all possible name and email values for better fallbacks
-                const possibleName =
-                  friend.users?.name ||
-                  friend.name ||
-                  friend.users?.email ||
-                  "";
-                const possibleEmail = friend.users?.email || friend.email || "";
+
+                if (updatedUserData && typeof updatedUserData === "object") {
+                  if (
+                    updatedUserData.users &&
+                    typeof updatedUserData.users === "object"
+                  ) {
+                    console.log(
+                      "Found nested users object:",
+                      updatedUserData.users,
+                    );
+                    updatedUserData = {
+                      ...updatedUserData,
+                      ...updatedUserData.users,
+                    };
+                  }
+                }
+
+                let friendName =
+                  updatedUserData.display_name ||
+                  updatedUserData.name ||
+                  updatedUserData.full_name;
+
+                if (
+                  !friendName ||
+                  friendName === friend.friend_id ||
+                  friendName.includes("-")
+                ) {
+                  if (
+                    updatedUserData.email &&
+                    updatedUserData.email.includes("@")
+                  ) {
+                    const emailParts = updatedUserData.email.split("@");
+                    if (emailParts.length > 0 && emailParts[0].trim() !== "") {
+                      friendName = emailParts[0];
+                    }
+                  } else {
+                    friendName = `User ${friend.friend_id.substring(0, 8)}`;
+                  }
+                }
+                console.log(
+                  `Friend name from database for ${friend.friend_id}:`,
+                  friendName,
+                );
+
+                console.log("Friend data being passed to FriendCard:", {
+                  friendId: friend.friend_id,
+                  friendName: friendName,
+                  userData: updatedUserData,
+                });
+
+                const formattedFriendData = {
+                  id: updatedUserData.id || friend.friend_id,
+                  name: friendName,
+                  full_name: updatedUserData.full_name,
+                  email: updatedUserData.email || "",
+                  level: updatedUserData.level || 1,
+                  xp: updatedUserData.xp || 0,
+                  avatar_url: updatedUserData.avatar_url,
+                };
+
+                console.log("Formatted friend data with name:", {
+                  id: formattedFriendData.id,
+                  name: formattedFriendData.name,
+                  friendName: friendName,
+                  isUUID: friendName.includes("-") && friendName.length > 30,
+                });
+
+                if (friendName.startsWith("User ") && friendName.length <= 15) {
+                  console.log(
+                    `Detected default name ${friendName}, attempting direct fetch`,
+                  );
+                  (async () => {
+                    try {
+                      const supabase = createBrowserSupabaseClient();
+                      const { data: directUserData } = await supabase
+                        .from("users")
+                        .select("id, name, full_name, email")
+                        .eq("id", friend.friend_id)
+                        .single();
+
+                      console.log(
+                        `Direct fetch for ${friend.friend_id} returned:`,
+                        directUserData,
+                      );
+
+                      if (
+                        directUserData &&
+                        (directUserData.name || directUserData.full_name)
+                      ) {
+                        refreshFriends();
+                      }
+                    } catch (err) {
+                      console.error(
+                        `Error in direct fetch for ${friend.friend_id}:`,
+                        err,
+                      );
+                    }
+                  })();
+                }
+
+                console.log(
+                  `Formatted friend data for ${friend.friend_id}:`,
+                  formattedFriendData,
+                );
 
                 return (
-                  <div
+                  <FriendCard
                     key={uniqueKey}
-                    className="border rounded-lg p-4 hover:border-purple-200 transition-all"
-                  >
-                    <FriendCard
-                      friendId={friend.friend_id}
-                      friendName={possibleName}
-                      friendEmail={possibleEmail}
-                    />
-                  </div>
+                    friendId={friend.friend_id}
+                    friendName={friendName}
+                    friendEmail={updatedUserData.email}
+                    friendData={formattedFriendData}
+                  />
                 );
               })}
           </div>
@@ -319,29 +557,44 @@ function FriendsList() {
   );
 }
 
+function calculateLevelProgress(
+  currentXP: number,
+  currentLevel: number,
+): number {
+  const baseXP = 100;
+  const growthFactor = 1.5;
+
+  let totalXPForCurrentLevel = 0;
+  for (let i = 1; i < currentLevel; i++) {
+    totalXPForCurrentLevel += Math.floor(
+      baseXP * Math.pow(growthFactor, i - 1),
+    );
+  }
+
+  let totalXPForNextLevel = totalXPForCurrentLevel;
+  totalXPForNextLevel += Math.floor(
+    baseXP * Math.pow(growthFactor, currentLevel - 1),
+  );
+
+  const xpInCurrentLevel = currentXP - totalXPForCurrentLevel;
+  const xpRequiredForNextLevel = totalXPForNextLevel - totalXPForCurrentLevel;
+
+  const progress = Math.floor(
+    (xpInCurrentLevel / xpRequiredForNextLevel) * 100,
+  );
+  return Math.min(Math.max(progress, 0), 100);
+}
+
 export function ClientFriendComponents() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Function to refresh both components
   const refreshAll = () => {
     console.log("[ClientFriendComponents] Refreshing all components");
     setRefreshTrigger((prev) => prev + 1);
   };
 
-  // Removed auto-refresh to prevent constant refreshing
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     console.log("[ClientFriendComponents] Auto-refreshing components");
-  //     refreshAll();
-  //   }, 5000);
-  //
-  //   return () => clearInterval(interval);
-  // }, []);
-
-  // Only refresh once when the component mounts
   useEffect(() => {
     console.log("[ClientFriendComponents] Initial load, refreshing components");
-    // Add a small delay before initial load to ensure auth is ready
     const timer = setTimeout(() => {
       refreshAll();
     }, 1000);

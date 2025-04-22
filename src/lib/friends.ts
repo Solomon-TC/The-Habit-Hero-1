@@ -392,10 +392,42 @@ export async function getFriends() {
       // Continue anyway, as the function might not exist in all environments
     }
 
+    // Run the function to ensure all friend users exist with proper names
+    try {
+      await supabase.rpc("ensure_friend_users_exist");
+      console.log(
+        "[lib/friends] Ensured all friend users exist with proper names",
+      );
+    } catch (error) {
+      console.log(
+        "[lib/friends] Error running ensure_friend_users_exist:",
+        error,
+      );
+      // Continue anyway as this is just a helper
+    }
+
     // Get friend user details with full_name included
+    // First try the get_user_by_id function for each friend to ensure they exist
+    for (const friendId of friendIds) {
+      try {
+        const { data: userData } = await supabase.rpc("get_user_by_id", {
+          input_user_id: friendId,
+        });
+        console.log(
+          `[lib/friends] User data for friend ${friendId}:`,
+          userData,
+        );
+      } catch (error) {
+        console.log(`Error ensuring friend ${friendId} exists:`, error);
+      }
+    }
+
+    // Then get all friend data with explicit field selection to ensure we get all needed fields
     const { data: friends, error: friendsError } = await supabase
       .from("users")
-      .select("id, name, full_name, email, avatar_url, created_at, level, xp")
+      .select(
+        "id, name, full_name, email, avatar_url, level, xp, created_at, updated_at, display_name",
+      )
       .in("id", friendIds);
 
     console.log("[lib/friends] Friend IDs for query:", friendIds);
@@ -414,7 +446,7 @@ export async function getFriends() {
       console.log("[lib/friends] Creating placeholder friend objects");
       const placeholderFriends = friendships.map((f) => ({
         id: f.friend_id,
-        name: `User ${f.friend_id.substring(0, 8)}`,
+        name: `Friend ${f.friend_id.substring(0, 8)}`,
         email: `user_${f.friend_id.substring(0, 8)}@example.com`,
         avatar_url: null,
         created_at: f.created_at,
@@ -426,8 +458,97 @@ export async function getFriends() {
       return { friends: placeholderFriends };
     }
 
-    console.log("[lib/friends] Found friend details:", friends.length);
-    return { friends: friends };
+    // Process friends data to ensure valid names
+    const processedFriends = friends.map((friend) => {
+      // Log each friend's data for debugging
+      console.log(`[lib/friends] Processing friend ${friend.id}:`, {
+        name: friend.name,
+        full_name: friend.full_name,
+        email: friend.email,
+      });
+
+      // Use display_name if available, otherwise try to get a proper display name
+      if (
+        friend.display_name &&
+        friend.display_name !== "null" &&
+        friend.display_name !== "undefined" &&
+        friend.display_name.trim() !== ""
+      ) {
+        // Use the display_name directly
+        friend.name = friend.display_name;
+      } else {
+        // Check if name is a UUID or invalid
+        const isNameInvalid =
+          !friend.name ||
+          friend.name === "null" ||
+          friend.name === "undefined" ||
+          friend.name.trim() === "" ||
+          friend.name.includes("-") ||
+          friend.name.length > 30 ||
+          friend.name === friend.id;
+
+        // Try to get a proper display name
+        if (isNameInvalid) {
+          // Try to use full_name first
+          if (
+            friend.full_name &&
+            friend.full_name !== "null" &&
+            friend.full_name !== "undefined" &&
+            friend.full_name.trim() !== ""
+          ) {
+            friend.name = friend.full_name;
+          }
+          // Try to use email username next
+          else if (
+            friend.email &&
+            friend.email !== "null" &&
+            friend.email !== "undefined" &&
+            friend.email.trim() !== ""
+          ) {
+            const emailParts = friend.email.split("@");
+            if (emailParts.length > 0 && emailParts[0].trim() !== "") {
+              friend.name = emailParts[0];
+            }
+          }
+          // Last resort: use a generic name with the user ID
+          else {
+            friend.name = `Friend ${friend.id.substring(0, 8)}`;
+          }
+        }
+
+        // Update the display_name field for consistency
+        friend.display_name = friend.name;
+      }
+
+      // Try to use the database function if available
+      try {
+        const supabase = createBrowserSupabaseClient();
+        if (supabase) {
+          (async () => {
+            const { data } = await supabase.rpc("get_user_display_name", {
+              user_id: friend.id,
+            });
+            if (data) {
+              friend.name = data;
+              console.log(`[lib/friends] Updated name from function: ${data}`);
+            }
+          })();
+        }
+      } catch (e) {
+        console.log(
+          "[lib/friends] Error getting display name from function:",
+          e,
+        );
+      }
+
+      return friend;
+    });
+
+    console.log(
+      "[lib/friends] Processed friend details:",
+      processedFriends.length,
+    );
+    return { friends: processedFriends };
   } catch (e) {
     console.error("[lib/friends] Exception in getFriends:", e);
     return { friends: [] };

@@ -1,28 +1,56 @@
-import { redirect } from 'next/navigation';
-import { checkUserSubscription } from '@/app/actions';
-import { createClient } from '../../supabase/server';
+import { redirect } from "next/navigation";
+import { checkUserSubscription } from "@/app/actions";
+import { createClient } from "../../supabase/server";
 
 interface SubscriptionCheckProps {
-    children: React.ReactNode;
-    redirectTo?: string;
+  children: React.ReactNode;
+  redirectTo?: string;
 }
 
 export async function SubscriptionCheck({
-    children,
-    redirectTo = '/pricing'
+  children,
+  redirectTo = "/pricing",
 }: SubscriptionCheckProps) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-    if (!user) {
-        redirect('/sign-in');
+  if (!user) {
+    redirect("/sign-in");
+  }
+
+  try {
+    // Check for active subscription directly from the database
+    const { data: subscriptions, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", user.id)
+      .in("status", ["active", "trialing"]);
+
+    // If there's an error checking the subscription, log it but don't block the user
+    if (error) {
+      console.error("Error checking subscription:", error);
+      // Continue showing content if there's an error checking subscription
+      return <>{children}</>;
     }
 
-    const isSubscribed = await checkUserSubscription(user?.id!);
-
-    if (!isSubscribed) {
-        redirect(redirectTo);
+    // If any active subscription is found, user has access
+    if (Array.isArray(subscriptions) && subscriptions.length > 0) {
+      return <>{children}</>;
     }
 
+    // Fallback to the original check in case the direct check failed
+    const isSubscribed = await checkUserSubscription(user.id);
+    if (isSubscribed) {
+      return <>{children}</>;
+    }
+
+    // If no active subscription is found, redirect to pricing page
+    redirect(redirectTo);
+  } catch (error) {
+    console.error("Unexpected error in SubscriptionCheck:", error);
+    // On error, allow access to prevent locking users out
     return <>{children}</>;
+  }
 }

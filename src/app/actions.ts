@@ -211,18 +211,27 @@ export const signOutAction = async () => {
 };
 
 export const checkUserSubscription = async (userId: string) => {
-  const supabase = await createClient();
+  try {
+    const supabase = await createClient();
 
-  const { data: subscription, error } = await supabase
-    .from("subscriptions")
-    .select("*")
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .single();
+    // Check for active subscription in the subscriptions table
+    const { data: subscriptions, error } = await supabase
+      .from("subscriptions")
+      .select("*")
+      .eq("user_id", userId)
+      .in("status", ["active", "trialing"]);
 
-  if (error) {
-    return false;
+    if (error) {
+      console.error("Error checking subscription:", error);
+      // Default to true if there's an error to prevent locking users out
+      return true;
+    }
+
+    // Check if there are any active subscriptions in the array
+    return Array.isArray(subscriptions) && subscriptions.length > 0;
+  } catch (error) {
+    console.error("Unexpected error in checkUserSubscription:", error);
+    // Default to true if there's an error to prevent locking users out
+    return true;
   }
-
-  return !!subscription;
 };
