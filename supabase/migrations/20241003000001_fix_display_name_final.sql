@@ -13,4 +13,4 @@ SET
     -- Fallback to a generic name with the first 8 chars of the UUID
     ELSE 'User ' || SUBSTRING(id::text, 1, 8)
   END
-WHERE display_name IS NULL OR display_name = '' OR display_name::text = id::text;
+WHERE display_name IS NULL OR display_name = '' OR display_name = id::text OR (display_name IS NOT NULL AND id IS NOT NULL AND display_name::text = id::text);
