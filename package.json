@@ -48,6 +48,7 @@
     "@types/react-dom": "^18",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "ignore-loader": "^0.1.2",
+    "null-loader": "^4.0.1",
     "postcss": "^8",
     "tailwind-merge": "^2",
     "tailwindcss": "^3",

@@ -18,28 +18,22 @@ const nextConfig = {
       };
     }
 
-    // Add rule to handle Deno imports in Supabase Edge Functions
+    // Exclude Supabase Edge Functions from the build
     config.module.rules.push({
       test: /\.ts$/,
       include: /supabase\/functions/,
-      use: [
-        {
-          loader: "ignore-loader",
-        },
-      ],
+      exclude: /\.js$/,
+      use: "null-loader",
     });
 
     return config;
   },
-};
-
-// Configure experimental features
-if (process.env.NEXT_PUBLIC_TEMPO) {
-  nextConfig.experimental = {
+  // Explicitly tell Next.js to ignore Supabase Edge Functions
+  transpilePackages: [],
+  experimental: {
     serverComponentsExternalPackages: [],
-    // Explicitly enable SWC for font loading
     forceSwcTransforms: true,
-  };
-}
+  },
+};
 
 module.exports = nextConfig;
