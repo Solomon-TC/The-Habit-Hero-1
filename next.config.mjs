@@ -19,15 +19,11 @@ const nextConfig = {
       };
     }
 
-    // Add rule to handle Deno imports in Supabase Edge Functions
+    // Exclude Supabase Edge Functions from the build
     config.module.rules.push({
-      test: /\.ts$/,
+      test: /\.(ts|js)$/,
       include: /supabase\/functions/,
-      use: [
-        {
-          loader: "ignore-loader",
-        },
-      ],
+      use: "null-loader",
     });
 
     return config;
