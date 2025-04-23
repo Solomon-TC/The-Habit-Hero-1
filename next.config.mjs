@@ -7,6 +7,7 @@ const nextConfig = {
       "images.unsplash.com",
       "mkrahlftoiiugjfesudw.supabase.co",
     ],
+    unoptimized: process.env.NODE_ENV === "production",
   },
   // Ensure SWC is used for compilation
   swcMinify: true,
