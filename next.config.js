@@ -20,7 +20,7 @@ const nextConfig = {
 
     // Exclude Supabase Edge Functions from the build
     config.module.rules.push({
-      test: /\.ts$/,
+      test: /\.(ts|js)$/,
       include: /supabase\/functions/,
       use: "null-loader",
     });
