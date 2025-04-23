@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
+  // Completely exclude Supabase functions from the build
+  distDir: ".next",
+  pageExtensions: ["tsx", "ts", "jsx", "js", "md", "mdx"],
   images: {
     domains: [
       "api.dicebear.com",
@@ -19,18 +22,18 @@ const nextConfig = {
       };
     }
 
-    // Exclude Supabase Edge Functions from the build
+    // Complete exclusion of Supabase Edge Functions
     config.module.rules.push({
       test: /\.(ts|js)$/,
-      include: /supabase\/functions/,
+      include: [/supabase\/functions/],
       use: "null-loader",
     });
 
-    // Also exclude any imports from deno.land
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      "https://deno.land/std@0.168.0/http/server.ts": "path-browserify",
-      "https://esm.sh/stripe@13.6.0?target=deno": "stripe",
+    // Completely ignore all Deno imports
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      "https://deno.land/std@0.168.0/http/server.ts": false,
+      "https://esm.sh/stripe@13.6.0?target=deno": false,
     };
 
     return config;

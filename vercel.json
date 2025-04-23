@@ -26,5 +26,6 @@
         }
       ]
     }
-  ]
+  ],
+  "ignoreCommand": "echo 'Ignoring Supabase Edge Functions'"
 }
