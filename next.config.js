@@ -26,6 +26,13 @@ const nextConfig = {
       use: "null-loader",
     });
 
+    // Also exclude any imports from deno.land
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "https://deno.land/std@0.168.0/http/server.ts": "path-browserify",
+      "https://esm.sh/stripe@13.6.0?target=deno": "stripe",
+    };
+
     return config;
   },
   // Explicitly tell Next.js to ignore Supabase Edge Functions

@@ -52,6 +52,7 @@
     "husky": "^9.1.7",
     "ignore-loader": "^0.1.2",
     "null-loader": "^4.0.1",
+    "path-browserify": "^1.0.1",
     "postcss": "^8",
     "tailwind-merge": "^2",
     "tailwindcss": "^3",
