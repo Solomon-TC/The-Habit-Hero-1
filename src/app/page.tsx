@@ -2,7 +2,7 @@ import Hero from "@/components/hero";
 import Navbar from "@/components/navbar";
 import PricingCard from "@/components/pricing-card";
 import Footer from "@/components/footer";
-import { createClient } from "../../supabase/server";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
   ArrowUpRight,
   CheckCircle2,
@@ -17,14 +17,48 @@ import HabitDemo from "@/components/habit-demo";
 import Testimonials from "@/components/testimonials";
 
 export default async function Home() {
-  const supabase = await createClient();
+  const supabase = await createServerSupabaseClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: plans, error } = await supabase.functions.invoke(
-    "supabase-functions-get-plans",
-  );
+  // Define default plans since the 'plans' table doesn't exist yet
+  const plans = [
+    {
+      id: "price_basic",
+      name: "Basic",
+      amount: 0,
+      interval: "month",
+      popular: false,
+      features: ["Track up to 5 habits", "Basic statistics", "7-day streaks"],
+    },
+    {
+      id: "price_premium",
+      name: "Premium",
+      amount: 999,
+      interval: "month",
+      popular: true,
+      features: [
+        "Unlimited habits",
+        "Advanced analytics",
+        "Unlimited streaks",
+        "Priority support",
+      ],
+    },
+    {
+      id: "price_pro",
+      name: "Pro",
+      amount: 1999,
+      interval: "month",
+      popular: false,
+      features: [
+        "Everything in Premium",
+        "Team challenges",
+        "API access",
+        "Custom badges",
+      ],
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
