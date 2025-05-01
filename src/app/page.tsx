@@ -1,10 +1,9 @@
 import Hero from "@/components/hero";
-import Navbar from "@/components/navbar";
+import NavbarWrapper from "./navbar-wrapper";
 import PricingCard from "@/components/pricing-card";
 import Footer from "@/components/footer";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import {
-  ArrowUpRight,
   CheckCircle2,
   Zap,
   Trophy,
@@ -12,9 +11,12 @@ import {
   Flame,
   Award,
   Target,
+  ArrowUpRight,
 } from "lucide-react";
 import HabitDemo from "@/components/habit-demo";
-import Testimonials from "@/components/testimonials";
+import FeatureTabs from "@/components/feature-tabs";
+import TestimonialCarousel from "@/components/testimonial-carousel";
+import CtaSection from "@/components/cta-section";
 
 export default async function Home() {
   const supabase = await createServerSupabaseClient();
@@ -62,7 +64,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      <Navbar />
+      <NavbarWrapper />
       <Hero />
 
       {/* Features Section */}
@@ -76,43 +78,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {[
-              {
-                icon: <Trophy className="w-6 h-6" />,
-                title: "Points & Rewards",
-                description:
-                  "Earn points for every completed habit and unlock exciting rewards",
-              },
-              {
-                icon: <Flame className="w-6 h-6" />,
-                title: "Streaks & Combos",
-                description:
-                  "Build streaks and maintain your momentum with visual progress",
-              },
-              {
-                icon: <Award className="w-6 h-6" />,
-                title: "Badges & Achievements",
-                description:
-                  "Collect badges for milestones and special accomplishments",
-              },
-              {
-                icon: <Star className="w-6 h-6" />,
-                title: "Leaderboards",
-                description:
-                  "Compete with friends and climb the ranks for extra motivation",
-              },
-            ].map((feature, index) => (
-              <div
-                key={index}
-                className="p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow"
-              >
-                <div className="text-purple-600 mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
-              </div>
-            ))}
-          </div>
+          <FeatureTabs />
         </div>
       </section>
 
@@ -144,7 +110,7 @@ export default async function Home() {
             </div>
             <div>
               <div className="text-4xl font-bold mb-2">500K+</div>
-              <div className="text-purple-100">Happy Users</div>
+              <div className="text-synthwave-neonPurple/80">Happy Users</div>
             </div>
           </div>
         </div>
@@ -161,7 +127,7 @@ export default async function Home() {
             </p>
           </div>
 
-          <Testimonials />
+          <TestimonialCarousel />
         </div>
       </section>
 
@@ -185,42 +151,7 @@ export default async function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-purple-50 to-blue-50">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">
-            Start Building Better Habits Today
-          </h2>
-          <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-            Join thousands of users who have transformed their lives through
-            gamified habit tracking.
-          </p>
-
-          <div className="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md mb-8">
-            <form className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                required
-              />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                Get Started
-              </button>
-            </form>
-          </div>
-
-          <a
-            href="/dashboard"
-            className="inline-flex items-center px-6 py-3 text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            Explore Dashboard
-            <ArrowUpRight className="ml-2 w-4 h-4" />
-          </a>
-        </div>
-      </section>
+      <CtaSection />
 
       <Footer />
     </div>

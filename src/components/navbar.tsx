@@ -1,16 +1,16 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
-import { createClient } from "../../supabase/server";
 import { Button } from "./ui/button";
-import { Trophy, UserCircle } from "lucide-react";
+import { Trophy, Menu, X, UserCircle } from "lucide-react";
 import UserProfile from "./user-profile";
 
-export default async function Navbar() {
-  const supabase = createClient();
+interface NavbarProps {
+  user: any | null;
+}
 
-  const {
-    data: { user },
-  } = await (await supabase).auth.getUser();
-
+export default function Navbar({ user }: NavbarProps) {
   return (
     <nav className="w-full border-b border-gray-200 bg-white py-4 sticky top-0 z-50">
       <div className="container mx-auto px-4 flex justify-between items-center">

@@ -106,7 +106,7 @@ export default function HabitDemo() {
   return (
     <div id="demo" className="max-w-4xl mx-auto">
       <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-        <div className="p-6 bg-gradient-to-r from-purple-600 to-blue-600 text-white">
+        <div className="p-6 bg-gradient-to-r from-synthwave-neonPink to-synthwave-neonBlue text-white">
           <h3 className="text-xl font-semibold mb-2">Interactive Habit Demo</h3>
           <p className="opacity-90">See how our gamified habit tracker works</p>
         </div>
@@ -121,12 +121,12 @@ export default function HabitDemo() {
                 {habitOptions.map((habit) => (
                   <Card
                     key={habit.id}
-                    className={`cursor-pointer hover:border-purple-300 transition-all ${selectedHabit === habit.id ? "border-purple-500 ring-2 ring-purple-200" : ""}`}
+                    className={`cursor-pointer hover:border-synthwave-neonPink/50 transition-all ${selectedHabit === habit.id ? "border-synthwave-neonPink ring-2 ring-synthwave-neonPink/30" : ""}`}
                     onClick={() => handleSelectHabit(habit.id)}
                   >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
-                        <div className="bg-purple-100 p-2 rounded-md text-purple-600">
+                        <div className="bg-synthwave-neonPink/20 p-2 rounded-md text-synthwave-neonPink">
                           {habit.icon}
                         </div>
                         <div className="text-sm font-medium text-gray-500">
@@ -139,7 +139,7 @@ export default function HabitDemo() {
                       <CardDescription>{habit.description}</CardDescription>
                     </CardHeader>
                     <CardFooter className="pt-0">
-                      <div className="flex items-center text-sm text-purple-600">
+                      <div className="flex items-center text-sm text-synthwave-neonPink">
                         <Star className="w-4 h-4 mr-1" />
                         <span>{habit.points} points per completion</span>
                       </div>
@@ -163,7 +163,7 @@ export default function HabitDemo() {
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle>{selectedHabitDetails.name}</CardTitle>
-                    <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
+                    <div className="bg-synthwave-neonPink/20 text-synthwave-neonPink px-3 py-1 rounded-full text-sm font-medium">
                       {selectedHabitDetails.frequency}
                     </div>
                   </div>
@@ -176,7 +176,7 @@ export default function HabitDemo() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-center">
-                        <Trophy className="w-5 h-5 text-purple-500 mr-2" />
+                        <Trophy className="w-5 h-5 text-synthwave-neonPink mr-2" />
                         <span>Reward</span>
                       </div>
                       <div className="flex items-center">
@@ -199,24 +199,24 @@ export default function HabitDemo() {
                         </h4>
                         {showReward && (
                           <div className="mt-4 animate-fade-in">
-                            <div className="text-center p-4 bg-purple-100 rounded-lg border border-purple-200 mb-4">
+                            <div className="text-center p-4 bg-synthwave-neonPink/10 rounded-lg border border-synthwave-neonPink/30 mb-4">
                               <div className="flex justify-center mb-2">
-                                <Award className="w-8 h-8 text-purple-600" />
+                                <Award className="w-8 h-8 text-synthwave-neonPink" />
                               </div>
-                              <h4 className="font-medium text-purple-800 mb-1">
+                              <h4 className="font-medium text-synthwave-neonPink mb-1">
                                 Reward Earned!
                               </h4>
-                              <p className="text-sm text-purple-700">
+                              <p className="text-sm text-synthwave-neonPink/90">
                                 +{selectedHabitDetails.points} points added to
                                 your account
                               </p>
-                              <div className="mt-3 text-xs text-purple-600">
+                              <div className="mt-3 text-xs text-synthwave-neonPink/80">
                                 Keep it up to earn streak bonuses!
                               </div>
                             </div>
                             <Button
                               onClick={handleReset}
-                              className="w-full bg-purple-600 hover:bg-purple-700"
+                              className="w-full bg-synthwave-neonPink hover:bg-synthwave-neonPink/80 shadow-lg shadow-synthwave-neonPink/20"
                             >
                               Try Another Habit
                             </Button>
@@ -226,7 +226,7 @@ export default function HabitDemo() {
                     ) : (
                       <Button
                         onClick={handleComplete}
-                        className="w-full bg-purple-600 hover:bg-purple-700"
+                        className="w-full bg-synthwave-neonPink hover:bg-synthwave-neonPink/80 shadow-lg shadow-synthwave-neonPink/20"
                       >
                         Mark as Completed
                       </Button>

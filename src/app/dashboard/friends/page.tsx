@@ -1,26 +1,13 @@
-import { Suspense } from "react";
 import DashboardNavbar from "@/components/dashboard-navbar";
-import { createServerSupabaseClient } from "@/lib/supabase-server-actions";
+import FriendList from "@/components/friends/friend-list";
+import FriendSearch from "@/components/friends/friend-search";
+import FriendRequests from "@/components/friends/friend-requests";
+import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
-import { SubscriptionCheck } from "@/components/subscription-check";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/client-card";
-import { FriendSearch } from "./client";
-import { DebugSearch } from "./debug";
-import { DebugFriends } from "./debug-friends";
-import { IdSearch } from "./id-search";
-import { RefreshButton } from "./refresh-button";
-import { ClientFriendComponents } from "./client-components";
 
-// Server component wrapper
 export default async function FriendsPage() {
+  // Check authentication
   const supabase = await createServerSupabaseClient();
-
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -29,49 +16,39 @@ export default async function FriendsPage() {
     return redirect("/sign-in");
   }
 
-  // Add a cache-busting timestamp to ensure the page is always fresh
-  const timestamp = new Date().getTime();
-
   return (
-    <SubscriptionCheck>
+    <>
       <DashboardNavbar />
       <main className="w-full bg-gray-50 min-h-screen">
         <div className="container mx-auto px-4 py-8 flex flex-col gap-8">
           <header className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold">Friends</h1>
-              <RefreshButton />
             </div>
             <p className="text-gray-600">
               Connect with friends and motivate each other on your habit
               journeys.
             </p>
-            {/* Hidden timestamp to force re-render: {timestamp} */}
           </header>
 
-          {/* Search and Add Friends */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Find Friends</CardTitle>
-              <CardDescription>
-                Search for friends by email or username
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Friend Requests Section */}
+            <div className="lg:col-span-3">
+              <FriendRequests />
+            </div>
+
+            {/* Friend Search Section */}
+            <div className="lg:col-span-1">
               <FriendSearch />
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* ID Search Tool */}
-          <IdSearch />
-
-          {/* Debug Tools */}
-          <DebugFriends />
-
-          {/* Friend Requests and Friends List */}
-          <ClientFriendComponents />
+            {/* Friend List Section */}
+            <div className="lg:col-span-2">
+              <FriendList />
+            </div>
+          </div>
         </div>
       </main>
-    </SubscriptionCheck>
+    </>
   );
 }

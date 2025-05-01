@@ -9,12 +9,26 @@ export function RefreshButton() {
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Force a refresh of the current page
-    router.refresh();
-    // Reset the refreshing state after a short delay
-    setTimeout(() => setIsRefreshing(false), 1000);
+    try {
+      // First try to refresh auth via API
+      const response = await fetch("/api/auth/refresh");
+      await response.json();
+
+      // Force a refresh of the current page
+      router.refresh();
+
+      // Also reload the page to ensure fresh state
+      setTimeout(() => window.location.reload(), 300);
+    } catch (error) {
+      console.error("Error refreshing:", error);
+      // If API call fails, just reload the page
+      window.location.reload();
+    } finally {
+      // This might not run due to the page reload
+      setTimeout(() => setIsRefreshing(false), 1000);
+    }
   };
 
   return (

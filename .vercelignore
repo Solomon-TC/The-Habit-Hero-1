@@ -2,3 +2,4 @@ supabase/functions/**/*
 .git
 README.md
 .env*
+supabase/functions

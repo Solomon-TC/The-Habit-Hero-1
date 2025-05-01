@@ -52,6 +52,20 @@ const config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        // Synthwave color palette
+        synthwave: {
+          background: "#0b0014", // Deep dark purple background
+          grid: "#1a0b2e", // Slightly lighter grid lines
+          neonPink: "#ff2a6d", // Vibrant neon pink
+          neonBlue: "#05d9e8", // Bright cyan/blue
+          neonPurple: "#9d4edd", // Vibrant purple
+          neonOrange: "#ff9e00", // Bright orange
+          sunset: "#ff71ce", // Pink-purple gradient color
+          highlight: "#b967ff", // Highlight purple
+          glow: "#01cdfe", // Blue glow
+          darkPurple: "#2d1b3e", // Dark purple for surfaces
+          deepBlue: "#1b2735", // Deep blue for alternate surfaces
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

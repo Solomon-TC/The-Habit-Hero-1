@@ -145,7 +145,7 @@ export default function Testimonials() {
             <button
               key={index}
               onClick={() => setActiveIndex(index)}
-              className={`w-2 h-2 rounded-full transition-colors ${index === activeIndex ? "bg-purple-600" : "bg-gray-300"}`}
+              className={`w-2 h-2 rounded-full transition-colors ${index === activeIndex ? "bg-synthwave-neonPink" : "bg-gray-300"}`}
               aria-label={`Go to testimonial ${index + 1}`}
             />
           ))}

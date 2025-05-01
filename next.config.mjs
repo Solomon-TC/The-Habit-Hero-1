@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
+  // Completely exclude Supabase functions from the build
+  distDir: ".next",
+  pageExtensions: ["tsx", "ts", "jsx", "js", "md", "mdx"],
   images: {
     domains: [
       "api.dicebear.com",
@@ -11,6 +14,8 @@ const nextConfig = {
   },
   // Ensure SWC is used for compilation
   swcMinify: true,
+  // Ensure tempo-devtools is properly transpiled
+  transpilePackages: ["tempo-devtools"],
   // Disable webpack persistent caching to prevent file system errors
   webpack: (config, { dev }) => {
     if (dev) {
@@ -19,24 +24,40 @@ const nextConfig = {
       };
     }
 
-    // Exclude Supabase Edge Functions from the build
+    // Complete exclusion of Supabase Edge Functions
     config.module.rules.push({
       test: /\.(ts|js)$/,
-      include: /supabase\/functions/,
+      include: [/supabase\/functions/],
       use: "null-loader",
     });
 
+    // Completely ignore all Deno imports
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "https://deno.land/std@0.168.0/http/server.ts": false,
+      "https://esm.sh/stripe@13.6.0?target=deno": false,
+      "https://esm.sh/@supabase/supabase-js@2": false,
+    };
+
+    // Ensure fallbacks for any other Deno imports
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      "https://deno.land/std@0.168.0/http/server.ts": false,
+      "https://esm.sh/stripe@13.6.0?target=deno": false,
+      "https://esm.sh/@supabase/supabase-js@2": false,
+    };
+
     return config;
   },
-};
-
-// Configure experimental features
-if (process.env.NEXT_PUBLIC_TEMPO) {
-  nextConfig.experimental = {
+  // Explicitly tell Next.js to ignore Supabase Edge Functions
+  experimental: {
     serverComponentsExternalPackages: [],
-    // Explicitly enable SWC for font loading
     forceSwcTransforms: true,
-  };
-}
+    // Exclude Supabase functions from server components
+    serverActions: {
+      bodySizeLimit: "2mb",
+    },
+  },
+};
 
 export default nextConfig;
