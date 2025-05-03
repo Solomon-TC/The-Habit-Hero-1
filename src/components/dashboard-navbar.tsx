@@ -24,6 +24,7 @@ import {
   Users,
   MessageSquare,
   LayoutDashboard,
+  Trophy,
 } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
 
@@ -93,6 +94,11 @@ export default function DashboardNavbar() {
       name: "Goals",
       href: "/dashboard/goals",
       icon: <Target className="h-5 w-5" />,
+    },
+    {
+      name: "Leaderboards",
+      href: "/dashboard/leaderboards",
+      icon: <Trophy className="h-5 w-5" />,
     },
     {
       name: "Friends",

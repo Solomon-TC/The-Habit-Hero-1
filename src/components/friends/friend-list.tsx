@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase-client";
-import FriendCard from "./friend-card";
+import FriendCard from "@/components/friend-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, UserPlus } from "lucide-react";
@@ -19,8 +19,20 @@ type Friend = {
   display_name: string | null;
 };
 
+type FriendData = {
+  id: string;
+  name?: string | null;
+  full_name?: string | null;
+  email?: string | null;
+  avatar_url?: string | null;
+  level?: number | null;
+  xp?: number | null;
+  display_name?: string | null;
+};
+
 export default function FriendList() {
   const [friends, setFriends] = useState<Friend[]>([]);
+  const [friendsData, setFriendsData] = useState<FriendData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [authError, setAuthError] = useState<boolean>(false);
@@ -82,7 +94,7 @@ export default function FriendList() {
     }
   };
 
-  // Fetch friends list
+  // Fetch friends list and their complete data
   const fetchFriends = async () => {
     try {
       setLoading(true);
@@ -188,7 +200,29 @@ export default function FriendList() {
         throw error;
       }
 
-      setFriends(data || []);
+      const friendsList = data || [];
+      setFriends(friendsList);
+
+      // Extract friend IDs to fetch complete user data
+      const friendIds = friendsList.map((friend) => friend.friend_id);
+
+      if (friendIds.length > 0) {
+        // Fetch complete user data for all friends directly from users table
+        const { data: friendsData, error: friendsDataError } = await supabase
+          .from("users")
+          .select(
+            "id, name, full_name, email, avatar_url, level, xp, display_name",
+          )
+          .in("id", friendIds);
+
+        if (friendsDataError) {
+          console.error("Error fetching friends data:", friendsDataError);
+        } else {
+          setFriendsData(friendsData || []);
+        }
+      } else {
+        setFriendsData([]);
+      }
     } catch (err: any) {
       console.error("Error fetching friends:", err);
       // Check if this is an auth error
@@ -417,18 +451,35 @@ export default function FriendList() {
           </div>
         ) : (
           <div className="grid gap-4">
-            {friends.map((friend) => (
-              <FriendCard
-                key={friend.friend_id}
-                id={friend.friend_id}
-                name={friend.name}
-                full_name={friend.full_name}
-                email={friend.email}
-                avatar_url={friend.avatar_url}
-                level={friend.level}
-                onRemove={handleRemoveFriend}
-              />
-            ))}
+            {friends.map((friend) => {
+              // Find the complete friend data from the users table
+              const friendData = friendsData.find(
+                (data) => data.id === friend.friend_id,
+              );
+
+              // Combine data from both sources, prioritizing the users table data
+              const combinedData = {
+                friendId: friend.friend_id,
+                friendEmail: friendData?.email || friend.email,
+                friendName:
+                  friendData?.display_name ||
+                  friendData?.name ||
+                  friend.display_name ||
+                  friend.name,
+                friendData: friendData || {
+                  id: friend.friend_id,
+                  name: friend.name,
+                  full_name: friend.full_name,
+                  email: friend.email,
+                  avatar_url: friend.avatar_url,
+                  level: friend.level,
+                  xp: friend.xp,
+                  display_name: friend.display_name,
+                },
+              };
+
+              return <FriendCard key={friend.friend_id} {...combinedData} />;
+            })}
           </div>
         )}
       </CardContent>

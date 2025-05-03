@@ -601,9 +601,14 @@ export default function FriendCard({
                     ? friendData.email.split("@")[0]
                     : `User ${friendId.substring(0, 8)}`}
               </CardTitle>
-              {friendData.email && friendData.email !== friendData.name && (
-                <p className="text-xs text-gray-500">{friendData.email}</p>
-              )}
+              <div className="flex flex-col">
+                {friendData.email && friendData.email !== friendData.name && (
+                  <p className="text-xs text-gray-500">{friendData.email}</p>
+                )}
+                <p className="text-xs text-amber-600 font-medium">
+                  {friendData.xp || 0} XP
+                </p>
+              </div>
             </div>
           </div>
           <Badge

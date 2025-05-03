@@ -51,14 +51,27 @@ export default function Navbar({ user }: NavbarProps) {
         <div className="flex gap-4 items-center">
           {user ? (
             <>
-              <Link
-                href="/dashboard"
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
-              >
-                <Button className="bg-synthwave-neonPurple hover:bg-synthwave-neonPurple/90">
-                  Dashboard
-                </Button>
-              </Link>
+              <div className="flex gap-2">
+                <Link
+                  href="/dashboard"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                >
+                  <Button className="bg-synthwave-neonPurple hover:bg-synthwave-neonPurple/90">
+                    Dashboard
+                  </Button>
+                </Link>
+                <Link
+                  href="/dashboard/leaderboards"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                >
+                  <Button
+                    variant="outline"
+                    className="border-synthwave-neonPurple text-synthwave-neonPurple hover:bg-synthwave-neonPurple/10"
+                  >
+                    Leaderboards
+                  </Button>
+                </Link>
+              </div>
               <UserProfile />
             </>
           ) : (
