@@ -6,21 +6,47 @@ let supabaseClient: ReturnType<
   typeof createClientComponentClient<Database>
 > | null = null;
 
+// Track when the client was last initialized
+let lastInitTime = 0;
+
 export function getSupabaseClient() {
+  const clientOptions = {
+    options: {
+      persistSession: true,
+      autoRefreshToken: true,
+      // Ensure cookies are used for storage with consistent settings
+      cookieOptions: {
+        name: "sb-auth-token",
+        lifetime: 60 * 60 * 24 * 7, // 1 week
+        sameSite: "lax",
+        secure: process.env.NODE_ENV === "production",
+        path: "/", // Ensure cookie is available across the entire site
+      },
+    },
+  };
+
   if (typeof window === "undefined") {
-    // Server-side - create a new client each time
-    return createClientComponentClient<Database>();
+    // Server-side - create a new client each time with the same options
+    return createClientComponentClient<Database>(clientOptions);
   }
 
-  // Client-side - use singleton pattern
+  // For client-side, we want to maintain a single instance to ensure consistent session handling
   if (!supabaseClient) {
     try {
-      supabaseClient = createClientComponentClient<Database>();
-      console.log("Supabase client initialized");
+      // Create a new client with explicit session persistence
+      supabaseClient = createClientComponentClient<Database>(clientOptions);
+
+      lastInitTime = Date.now();
+      console.log("Supabase client initialized with persistent session");
     } catch (error) {
       console.error("Error initializing Supabase client:", error);
-      // Return a new instance as fallback
-      return createClientComponentClient<Database>();
+      // Return a new instance as fallback with the same persistence options
+      return createClientComponentClient<Database>({
+        options: {
+          persistSession: true,
+          autoRefreshToken: true,
+        },
+      });
     }
   }
 

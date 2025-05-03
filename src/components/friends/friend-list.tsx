@@ -31,7 +31,23 @@ export default function FriendList() {
   // Check authentication status first
   const checkAuth = async () => {
     try {
-      // Try to get session first (most reliable)
+      // First try to refresh the auth session via API
+      try {
+        const response = await fetch("/api/auth/refresh");
+        const result = await response.json();
+
+        if (result.success && (result.user || result.session)) {
+          console.log("Auth refreshed via API:", result.user?.id);
+          setUserId(result.user?.id);
+          setAuthError(false);
+          return result.user?.id;
+        }
+      } catch (refreshErr) {
+        console.error("Error refreshing auth via API:", refreshErr);
+        // Continue with local checks if API refresh fails
+      }
+
+      // Try to get session directly from Supabase
       const { data: sessionData, error: sessionError } =
         await supabase.auth.getSession();
 
@@ -87,6 +103,87 @@ export default function FriendList() {
         { count: "exact" },
       );
 
+      // If the RPC function doesn't exist yet, fall back to direct query
+      if (
+        error &&
+        typeof error === "object" &&
+        "message" in error &&
+        error.message &&
+        error.message.includes(
+          "function get_friends_with_display_names() does not exist",
+        )
+      ) {
+        console.log("Falling back to direct query on friendships table");
+
+        // First query where user is the user_id
+        const { data: userFriends, error: userFriendsError } = await supabase
+          .from("friendships")
+          .select(
+            `
+            friend_id,
+            friend:friend_id(id, email, name, full_name, avatar_url, level, xp, display_name)
+            `,
+          )
+          .eq("user_id", currentUserId);
+
+        if (userFriendsError) {
+          console.error("Error fetching user friends:", userFriendsError);
+        }
+
+        // Then query where user is the friend_id
+        const { data: friendsOfUser, error: friendsOfUserError } =
+          await supabase
+            .from("friendships")
+            .select(
+              `
+            user_id,
+            friend:user_id(id, email, name, full_name, avatar_url, level, xp, display_name)
+            `,
+            )
+            .eq("friend_id", currentUserId);
+
+        if (friendsOfUserError) {
+          console.error("Error fetching friends of user:", friendsOfUserError);
+        }
+
+        // Combine both results
+        const userFriendsTransformed =
+          userFriends?.map((item) => ({
+            friend_id: item.friend_id,
+            name: item.friend?.name || null,
+            full_name: item.friend?.full_name || null,
+            email: item.friend?.email || null,
+            avatar_url: item.friend?.avatar_url || null,
+            level: item.friend?.level || null,
+            xp: item.friend?.xp || null,
+            display_name: item.friend?.display_name || null,
+          })) || [];
+
+        const friendsOfUserTransformed =
+          friendsOfUser?.map((item) => ({
+            friend_id: item.user_id,
+            name: item.friend?.name || null,
+            full_name: item.friend?.full_name || null,
+            email: item.friend?.email || null,
+            avatar_url: item.friend?.avatar_url || null,
+            level: item.friend?.level || null,
+            xp: item.friend?.xp || null,
+            display_name: item.friend?.display_name || null,
+          })) || [];
+
+        // Combine and deduplicate
+        const allFriends = [
+          ...userFriendsTransformed,
+          ...friendsOfUserTransformed,
+        ];
+        const uniqueFriends = allFriends.filter(
+          (friend, index, self) =>
+            index === self.findIndex((f) => f.friend_id === friend.friend_id),
+        );
+
+        return setFriends(uniqueFriends);
+      }
+
       if (error) {
         throw error;
       }
@@ -95,12 +192,23 @@ export default function FriendList() {
     } catch (err: any) {
       console.error("Error fetching friends:", err);
       // Check if this is an auth error
-      if (err.message && err.message.includes("Auth")) {
+      if (
+        err &&
+        typeof err === "object" &&
+        "message" in err &&
+        err.message &&
+        err.message.includes("Auth")
+      ) {
         setAuthError(true);
       } else {
-        setError(
-          err.message || err.details || err.hint || "Failed to load friends",
-        );
+        // Handle case where err might be empty or not have expected properties
+        const errorMessage =
+          err &&
+          typeof err === "object" &&
+          ("message" in err || "details" in err || "hint" in err)
+            ? err.message || err.details || err.hint
+            : "Failed to load friends";
+        setError(errorMessage);
       }
     } finally {
       setLoading(false);
@@ -138,7 +246,19 @@ export default function FriendList() {
     setIsRefreshing(true);
     try {
       // First try to refresh auth via API
-      await fetch("/api/auth/refresh");
+      const response = await fetch("/api/auth/refresh");
+      const result = await response.json();
+
+      console.log("Auth refresh result:", result);
+
+      if (result.success) {
+        // Force state update to trigger re-render
+        setAuthError(false);
+        if (result.user?.id) {
+          setUserId(result.user.id);
+        }
+      }
+
       // Then fetch friends again
       await fetchFriends();
     } catch (error) {
@@ -150,7 +270,27 @@ export default function FriendList() {
 
   // Initial fetch
   useEffect(() => {
-    fetchFriends();
+    // Check auth status immediately on component mount
+    const initialLoad = async () => {
+      // Try to refresh auth first
+      try {
+        const response = await fetch("/api/auth/refresh");
+        const result = await response.json();
+
+        if (result.success && result.user?.id) {
+          console.log("Initial auth refresh successful:", result.user.id);
+          setUserId(result.user.id);
+          setAuthError(false);
+        }
+      } catch (err) {
+        console.error("Error during initial auth refresh:", err);
+      }
+
+      // Then fetch friends
+      await fetchFriends();
+    };
+
+    initialLoad();
 
     // Set up realtime subscription for friend changes
     const channel = supabase

@@ -4,33 +4,55 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { refreshSessionComprehensive } from "@/lib/auth-helpers";
 
 export default function AuthRefreshButton({
   variant = "outline",
   size = "default",
+  onSuccess = null,
 }) {
   const router = useRouter();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [status, setStatus] = useState(null);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
+    setStatus("Refreshing session...");
+
     try {
-      // First try to refresh auth via API
-      const response = await fetch("/api/auth/refresh");
-      await response.json();
+      // Use the comprehensive refresh utility
+      const result = await refreshSessionComprehensive();
 
-      // Force a refresh of the current page
-      router.refresh();
+      if (result.success) {
+        setStatus("Session refreshed successfully!");
 
-      // Also reload the page to ensure fresh state
-      setTimeout(() => window.location.reload(), 300);
+        // If onSuccess callback is provided, call it
+        if (onSuccess && typeof onSuccess === "function") {
+          onSuccess(result);
+          return; // Don't reload if callback is provided
+        }
+
+        // Force a refresh of the current page
+        router.refresh();
+
+        // Also reload the page to ensure fresh state
+        setTimeout(() => window.location.reload(), 300);
+      } else {
+        console.error("Session refresh failed:", result.errors);
+        setStatus("Refresh failed. Reloading page...");
+        setTimeout(() => window.location.reload(), 1000);
+      }
     } catch (error) {
-      console.error("Error refreshing:", error);
-      // If API call fails, just reload the page
-      window.location.reload();
+      console.error("Error during session refresh:", error);
+      setStatus("Error occurred. Reloading page...");
+      // If comprehensive refresh fails, reload the page
+      setTimeout(() => window.location.reload(), 1000);
     } finally {
       // This might not run due to the page reload
-      setTimeout(() => setIsRefreshing(false), 1000);
+      setTimeout(() => {
+        setIsRefreshing(false);
+        setStatus(null);
+      }, 2000);
     }
   };
 

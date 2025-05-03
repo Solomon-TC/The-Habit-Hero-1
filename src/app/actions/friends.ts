@@ -39,12 +39,20 @@ export async function searchUsersAction(formData: FormData) {
         .eq("id", query)
         .maybeSingle();
 
-      console.log("Direct lookup result:", { directUser, directError });
+      console.log("Direct lookup result:", {
+        directUser,
+        directError: directError || null,
+      });
 
-      if (directUser && !directError) {
+      if (directUser) {
         console.log("Found user with direct lookup:", directUser);
         return { users: [directUser] };
       }
+
+      // If no direct user found but no error either, continue to next search method
+      console.log(
+        "No user found with direct lookup, continuing to other search methods",
+      );
     } catch (directLookupError) {
       console.error("Error in direct lookup:", directLookupError);
     }
@@ -92,7 +100,9 @@ export async function searchUsersAction(formData: FormData) {
       console.error("Error in auth lookup:", authLookupError);
     }
 
-    return { users: users || [] };
+    // Make sure users is defined before returning
+    // Fix potential reference error if users variable is undefined
+    return { users: [] };
   } catch (error) {
     console.error("Error in searchUsersAction:", error);
     return { users: [] };
@@ -204,16 +214,59 @@ export async function respondToFriendRequestAction(formData: FormData) {
 
     // If accepted, create friendship entries
     if (accept) {
-      // Create bidirectional friendship entries
-      const { error: friendshipError } = await supabase
-        .from("friendships")
-        .insert([
-          { user_id: user.id, friend_id: request.sender_id },
-          { user_id: request.sender_id, friend_id: user.id },
-        ]);
+      try {
+        console.log(
+          "Creating friendship entries between",
+          user.id,
+          "and",
+          request.sender_id,
+        );
 
-      if (friendshipError) {
-        return { success: false, error: friendshipError.message };
+        // Check if friendship already exists to avoid duplicates
+        const { data: existingFriendship, error: checkError } = await supabase
+          .from("friendships")
+          .select("*")
+          .or(
+            `user_id.eq.${user.id},friend_id.eq.${request.sender_id},user_id.eq.${request.sender_id},friend_id.eq.${user.id}`,
+          )
+          .maybeSingle();
+
+        if (checkError) {
+          console.error("Error checking existing friendship:", checkError);
+        }
+
+        if (!existingFriendship) {
+          // Create bidirectional friendship entries
+          const { data: friendshipData, error: friendshipError } =
+            await supabase
+              .from("friendships")
+              .insert([
+                { user_id: user.id, friend_id: request.sender_id },
+                { user_id: request.sender_id, friend_id: user.id },
+              ])
+              .select();
+
+          console.log("Friendship creation result:", {
+            friendshipData,
+            friendshipError: friendshipError || null,
+          });
+
+          if (friendshipError) {
+            console.error(
+              "Failed to create friendship entries:",
+              friendshipError,
+            );
+            return { success: false, error: friendshipError.message };
+          }
+        } else {
+          console.log("Friendship already exists, skipping creation");
+        }
+      } catch (friendshipCreationError) {
+        console.error(
+          "Exception during friendship creation:",
+          friendshipCreationError,
+        );
+        return { success: false, error: "Failed to create friendship entries" };
       }
     }
 

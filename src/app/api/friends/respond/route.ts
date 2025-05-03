@@ -61,17 +61,63 @@ export async function POST(request: NextRequest) {
 
     // If accepted, create friendship entries
     if (accept) {
-      // Create bidirectional friendship entries
-      const { error: friendshipError } = await supabase
-        .from("friendships")
-        .insert([
-          { user_id: user.id, friend_id: request.sender_id },
-          { user_id: request.sender_id, friend_id: user.id },
-        ]);
+      try {
+        console.log(
+          "API: Creating friendship entries between",
+          user.id,
+          "and",
+          request.sender_id,
+        );
 
-      if (friendshipError) {
+        // Check if friendship already exists to avoid duplicates
+        const { data: existingFriendship, error: checkError } = await supabase
+          .from("friendships")
+          .select("*")
+          .or(
+            `user_id.eq.${user.id},friend_id.eq.${request.sender_id},user_id.eq.${request.sender_id},friend_id.eq.${user.id}`,
+          )
+          .maybeSingle();
+
+        if (checkError) {
+          console.error("API: Error checking existing friendship:", checkError);
+        }
+
+        if (!existingFriendship) {
+          // Create bidirectional friendship entries
+          const { data: friendshipData, error: friendshipError } =
+            await supabase
+              .from("friendships")
+              .insert([
+                { user_id: user.id, friend_id: request.sender_id },
+                { user_id: request.sender_id, friend_id: user.id },
+              ])
+              .select();
+
+          console.log("API: Friendship creation result:", {
+            friendshipData,
+            friendshipError,
+          });
+
+          if (friendshipError) {
+            console.error(
+              "API: Failed to create friendship entries:",
+              friendshipError,
+            );
+            return NextResponse.json(
+              { success: false, error: friendshipError.message },
+              { status: 500 },
+            );
+          }
+        } else {
+          console.log("API: Friendship already exists, skipping creation");
+        }
+      } catch (friendshipCreationError) {
+        console.error(
+          "API: Exception during friendship creation:",
+          friendshipCreationError,
+        );
         return NextResponse.json(
-          { success: false, error: friendshipError.message },
+          { success: false, error: "Failed to create friendship entries" },
           { status: 500 },
         );
       }
