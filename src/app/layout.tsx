@@ -7,8 +7,9 @@ import ClientAuthProvider from "./client-auth-provider";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "HabitQuest - Gamified Habit Tracker",
+  title: "The Habit Hero - Gamified Habit Tracker",
   description: "Track your habits with a fun, gamified experience",
+  // Removed favicon metadata to avoid Next.js processing issues
 };
 
 export default function RootLayout({

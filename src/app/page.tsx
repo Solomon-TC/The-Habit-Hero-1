@@ -24,7 +24,7 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Define default plans since the 'plans' table doesn't exist yet
+  // Define default plans
   const plans = [
     {
       id: "price_basic",
@@ -68,10 +68,12 @@ export default async function Home() {
       <Hero />
 
       {/* Features Section */}
-      <section className="py-24 bg-white">
+      <section className="py-24 bg-white" id="features">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Gamify Your Habits</h2>
+            <h2 className="text-3xl font-bold mb-4 text-synthwave-neonPurple">
+              Gamify Your Habits
+            </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Turn your daily routines into exciting challenges with our
               gamified habit tracking system.
@@ -86,7 +88,9 @@ export default async function Home() {
       <section className="py-20 bg-gradient-to-r from-purple-50 to-blue-50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Try It Yourself</h2>
+            <h2 className="text-3xl font-bold mb-4 text-synthwave-neonPurple">
+              Try It Yourself
+            </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               Experience how our habit tracker works with this interactive demo.
             </p>
@@ -97,16 +101,16 @@ export default async function Home() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-purple-600 text-white">
+      <section className="py-20 bg-gradient-to-r from-synthwave-neonPurple to-synthwave-highlight text-white">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8 text-center">
             <div>
               <div className="text-4xl font-bold mb-2">10M+</div>
-              <div className="text-purple-100">Habits Tracked</div>
+              <div className="text-white">Habits Tracked</div>
             </div>
             <div>
               <div className="text-4xl font-bold mb-2">87%</div>
-              <div className="text-purple-100">Success Rate</div>
+              <div className="text-white">Success Rate</div>
             </div>
             <div>
               <div className="text-4xl font-bold mb-2">500K+</div>
@@ -120,7 +124,9 @@ export default async function Home() {
       <section className="py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">Success Stories</h2>
+            <h2 className="text-3xl font-bold mb-4 text-synthwave-neonPurple">
+              Success Stories
+            </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
               See how our app has helped people transform their habits and
               lives.
@@ -135,7 +141,7 @@ export default async function Home() {
       <section className="py-24 bg-white" id="pricing">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 text-synthwave-neonPurple">
               Simple, Transparent Pricing
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">

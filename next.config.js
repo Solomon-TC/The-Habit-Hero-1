@@ -11,6 +11,12 @@ const nextConfig = {
       "mkrahlftoiiugjfesudw.supabase.co",
     ],
     unoptimized: process.env.NODE_ENV === "production",
+    formats: ["image/avif", "image/webp"],
+  },
+  // No need for explicit favicon configuration with files in public directory
+  assetPrefix: "",
+  experimental: {
+    appDir: true,
   },
   // Ensure SWC is used for compilation
   swcMinify: true,
@@ -29,6 +35,15 @@ const nextConfig = {
       test: /\.(ts|js)$/,
       include: [/supabase\/functions/],
       use: "null-loader",
+    });
+
+    // Handle static assets with improved configuration
+    config.module.rules.push({
+      test: /\.(png|jpg|jpeg|gif|svg|ico)$/,
+      type: "asset/resource",
+      generator: {
+        filename: "static/media/[name].[hash][ext]",
+      },
     });
 
     // Completely ignore all Deno imports
@@ -57,6 +72,7 @@ const nextConfig = {
     serverActions: {
       bodySizeLimit: "2mb",
     },
+    appDir: true,
   },
 };
 

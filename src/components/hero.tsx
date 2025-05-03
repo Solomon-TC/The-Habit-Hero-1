@@ -14,14 +14,12 @@ export default function Hero() {
             <div className="text-center lg:text-left max-w-2xl">
               <div className="inline-flex items-center px-4 py-2 bg-purple-100 text-purple-800 rounded-full mb-6">
                 <Trophy className="w-4 h-4 mr-2" />
-                <span className="text-sm font-medium">
-                  Gamified Habit Tracking
-                </span>
+                <span className="text-sm font-medium">The Habit Hero</span>
               </div>
 
               <h1 className="text-5xl sm:text-6xl font-bold text-gray-900 mb-8 tracking-tight">
                 Make Habits
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 block">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-synthwave-neonPurple to-synthwave-neonBlue block">
                   Fun & Rewarding
                 </span>
               </h1>

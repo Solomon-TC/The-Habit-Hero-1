@@ -70,14 +70,14 @@ export default function TestimonialCarousel() {
       <CarouselContent>
         {testimonials.map((testimonial) => (
           <CarouselItem key={testimonial.id}>
-            <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-100 p-8 relative">
+            <div className="bg-white rounded-xl shadow-md overflow-hidden border border-synthwave-neonPurple/10 p-8 relative">
               <div className="absolute top-4 left-4 text-purple-300">
                 <Quote className="w-12 h-12 opacity-30" />
               </div>
 
               <div className="relative z-10">
                 <div className="flex flex-col md:flex-row items-center gap-8">
-                  <div className="w-24 h-24 relative rounded-full overflow-hidden border-4 border-purple-100 flex-shrink-0">
+                  <div className="w-24 h-24 relative rounded-full overflow-hidden border-4 border-synthwave-neonPurple/20 flex-shrink-0">
                     <Image
                       src={testimonial.avatar}
                       alt={testimonial.name}

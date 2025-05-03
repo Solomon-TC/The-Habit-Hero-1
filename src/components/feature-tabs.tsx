@@ -108,7 +108,9 @@ export default function FeatureTabs() {
                   <div className="p-2 bg-purple-100 text-purple-600 rounded-lg">
                     {tab.icon}
                   </div>
-                  <CardTitle className="text-2xl">{tab.title}</CardTitle>
+                  <CardTitle className="text-2xl text-synthwave-neonPurple">
+                    {tab.title}
+                  </CardTitle>
                 </div>
                 {tab.badge && <Badge variant="purple">{tab.badge}</Badge>}
               </div>
@@ -120,7 +122,7 @@ export default function FeatureTabs() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {tab.benefits.map((benefit, index) => (
                   <div key={index} className="flex items-center gap-2">
-                    <div className="p-1 bg-green-100 text-green-600 rounded-full">
+                    <div className="p-1 bg-synthwave-neonPurple bg-opacity-20 text-synthwave-neonPurple rounded-full">
                       <Check className="w-4 h-4" />
                     </div>
                     <span>{benefit}</span>

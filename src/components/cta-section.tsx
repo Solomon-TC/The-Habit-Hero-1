@@ -30,9 +30,9 @@ export default function CtaSection() {
   };
 
   return (
-    <section className="py-20 bg-gradient-to-r from-purple-50 to-blue-50">
+    <section className="py-20 bg-gradient-to-r from-synthwave-neonPurple/10 to-synthwave-neonBlue/10">
       <div className="container mx-auto px-4 text-center">
-        <h2 className="text-3xl font-bold mb-4">
+        <h2 className="text-3xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-synthwave-neonPurple to-synthwave-neonBlue">
           Start Building Better Habits Today
         </h2>
         <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
@@ -79,7 +79,11 @@ export default function CtaSection() {
         </Card>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button asChild size="lg" className="gap-2">
+          <Button
+            asChild
+            size="lg"
+            className="gap-2 bg-synthwave-neonPurple hover:bg-synthwave-neonPurple/90"
+          >
             <Link href="/dashboard">
               Explore Dashboard
               <ArrowUpRight className="w-4 h-4" />
