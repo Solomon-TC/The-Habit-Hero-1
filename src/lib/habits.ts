@@ -172,13 +172,45 @@ export async function logHabitCompletion(
     return logData;
   }
 
-  // Update the streak
-  // This is a simple implementation - in a real app, you'd want to check if the streak should be maintained or reset
-  // based on the frequency and last completion date
+  // Update the streak based on last completion date
+  // If more than 24 hours have passed since the last completion, reset streak to 1
+  // Otherwise, increment the streak
+
+  // Get the most recent habit log to check the last completion time
+  const { data: lastLog, error: lastLogError } = await adminClient
+    .from("habit_logs")
+    .select("completed_at")
+    .eq("habit_id", habitId)
+    .order("completed_at", { ascending: false })
+    .limit(1);
+
+  if (lastLogError) {
+    console.error("Error fetching last habit log:", lastLogError);
+  }
+
+  let newStreak = 1; // Default to 1 for first completion or reset
+
+  if (lastLog && lastLog.length > 0) {
+    const lastCompletionDate = new Date(lastLog[0].completed_at);
+    const currentDate = new Date();
+    const hoursDifference =
+      (currentDate.getTime() - lastCompletionDate.getTime()) / (1000 * 60 * 60);
+
+    // If less than 24 hours have passed, increment the streak
+    // Otherwise, reset to 1 (which is our default)
+    if (hoursDifference < 24) {
+      newStreak = habit.streak + 1;
+    }
+
+    console.log(
+      `Hours since last completion: ${hoursDifference}, new streak: ${newStreak}`,
+    );
+  }
+
   const { error: updateError } = await adminClient
     .from("habits")
     .update({
-      streak: habit.streak + 1,
+      streak: newStreak,
       updated_at: new Date().toISOString(),
     })
     .eq("id", habitId);
