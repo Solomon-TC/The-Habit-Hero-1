@@ -5,20 +5,20 @@ import { cookies } from "next/headers";
 // GET endpoint to fetch all feedback sorted by upvotes
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          async get(name) {
-            return (await cookieStore.get(name))?.value;
+          get(name) {
+            return cookieStore.get(name)?.value;
           },
-          async set(name, value, options) {
-            await cookieStore.set({ name, value, ...options });
+          set(name, value, options) {
+            cookieStore.set({ name, value, ...options });
           },
-          async remove(name, options) {
-            await cookieStore.set({ name, value: "", ...options });
+          remove(name, options) {
+            cookieStore.set({ name, value: "", ...options });
           },
         },
       },
@@ -80,20 +80,20 @@ export async function GET(request: NextRequest) {
 // POST endpoint to submit new feedback
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          async get(name) {
-            return (await cookieStore.get(name))?.value;
+          get(name) {
+            return cookieStore.get(name)?.value;
           },
-          async set(name, value, options) {
-            await cookieStore.set({ name, value, ...options });
+          set(name, value, options) {
+            cookieStore.set({ name, value, ...options });
           },
-          async remove(name, options) {
-            await cookieStore.set({ name, value: "", ...options });
+          remove(name, options) {
+            cookieStore.set({ name, value: "", ...options });
           },
         },
       },
