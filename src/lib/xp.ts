@@ -1,4 +1,5 @@
 // XP calculation functions
+import { createServiceRoleClient } from "./supabase-server-actions";
 
 /**
  * Calculate the XP required for the next level
@@ -82,21 +83,112 @@ export async function awardXP(
   reason: string,
   sourceId?: string,
 ) {
-  // This would typically interact with your database
-  // For now, we'll return a mock response
-  return {
-    success: true,
-    updatedUser: {
-      id: userId,
-      xp: 0, // This would be the updated XP
-      level: 1, // This would be the updated level
-    },
-    xpAwarded: amount,
-    reason,
-    sourceId,
-    newXP: 0,
-    newLevel: 1,
-    oldLevel: 1,
-    leveledUp: false,
-  };
+  try {
+    const supabase = createServiceRoleClient();
+    if (!supabase) {
+      console.error("Failed to create Supabase client");
+      return { error: "Failed to create Supabase client" };
+    }
+
+    // Get the user's current XP and level
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("id, xp, level")
+      .eq("id", userId)
+      .single();
+
+    if (userError) {
+      // If the user doesn't exist yet, create them
+      if (userError.code === "PGRST116") {
+        // Create a new user record
+        const { data: newUser, error: createError } = await supabase
+          .from("users")
+          .insert({
+            id: userId,
+            xp: 0,
+            level: 1,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .select()
+          .single();
+
+        if (createError) {
+          console.error("Error creating new user record:", createError);
+          return { error: createError.message };
+        }
+
+        userData = newUser;
+      } else {
+        console.error("Error fetching user data:", userError);
+        return { error: userError.message };
+      }
+    }
+
+    // If we still don't have user data, return an error
+    if (!userData) {
+      return { error: "User not found and could not be created" };
+    }
+
+    // Calculate the new XP and level
+    const oldXP = userData.xp || 0;
+    const oldLevel = userData.level || 1;
+    const newXP = oldXP + amount;
+
+    // Calculate the new level based on the new XP
+    const newLevel = calculateLevelFromXP(newXP);
+    const leveledUp = newLevel > oldLevel;
+
+    // Update the user's XP and level
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({
+        xp: newXP,
+        level: newLevel,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    if (updateError) {
+      console.error("Error updating user XP:", updateError);
+      return { error: updateError.message };
+    }
+
+    // Log the XP award
+    const { error: logError } = await supabase.from("xp_logs").insert({
+      user_id: userId,
+      amount,
+      reason: reason || "general", // Ensure reason has a default value
+      source_id: sourceId,
+      source: sourceId ? "external" : "system", // Provide a default value for source
+      level_before: oldLevel,
+      level_after: newLevel,
+      created_at: new Date().toISOString(),
+    });
+
+    if (logError) {
+      console.error("Error logging XP award:", logError);
+      // Continue anyway since the XP was awarded successfully
+    }
+
+    return {
+      success: true,
+      updatedUser: {
+        id: userId,
+        xp: newXP,
+        level: newLevel,
+      },
+      xpAwarded: amount,
+      reason,
+      sourceId,
+      newXP,
+      oldXP,
+      newLevel,
+      oldLevel,
+      leveledUp,
+    };
+  } catch (error) {
+    console.error("Unexpected error in awardXP:", error);
+    return { error: String(error) };
+  }
 }

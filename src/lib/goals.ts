@@ -140,6 +140,18 @@ export async function updateGoalProgress(goalId: string, progress: number) {
         };
       }
 
+      // Get the updated user data to confirm XP was awarded
+      const { data: updatedUser } = await supabase
+        .from("users")
+        .select("xp, level")
+        .eq("id", goal.user_id)
+        .single();
+
+      console.log(
+        "[SERVER] Updated user data after goal XP award:",
+        updatedUser,
+      );
+
       if (xpResult.leveledUp) {
         // Could trigger a notification or animation here
         console.log(
@@ -158,6 +170,8 @@ export async function updateGoalProgress(goalId: string, progress: number) {
         newLevel: xpResult.newLevel,
         goalName: goal.title || "Goal",
         type: "goal",
+        updatedXP: updatedUser?.xp || 0,
+        updatedLevel: updatedUser?.level || 1,
       };
 
       console.log(`[SERVER] Returning goal completion result:`, result);

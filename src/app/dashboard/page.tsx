@@ -24,6 +24,7 @@ import { DebugXPButton } from "@/components/debug-xp-button";
 import LevelProgress from "@/components/level-progress";
 
 import { ClientMilestoneForm } from "./client-milestone-form";
+import { ClientHabitCard } from "./client-habit-card";
 
 export default async function Dashboard() {
   const supabase = await createServerSupabaseClient();
@@ -224,46 +225,11 @@ export default async function Dashboard() {
                 ) : (
                   <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2">
                     {habitsWithProgress.map((habit) => (
-                      <Card
+                      <ClientHabitCard
                         key={habit.id}
-                        className="overflow-hidden hover:border-purple-200 transition-all"
-                      >
-                        <CardHeader className="pb-2">
-                          <div className="flex justify-between items-start">
-                            <CardTitle className="text-base">
-                              {habit.name}
-                            </CardTitle>
-                            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded">
-                              {habit.isCompleted ? "Completed" : "In Progress"}
-                            </span>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="pt-2">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>Progress</span>
-                            <span>
-                              {habit.progress} / {habit.target_count}
-                            </span>
-                          </div>
-                          <Progress
-                            value={(habit.progress / habit.target_count) * 100}
-                            className="h-2 bg-gray-200"
-                          />
-                          <div className="flex justify-between mt-3">
-                            <Link href={`/dashboard/habits?edit=${habit.id}`}>
-                              <Button variant="outline" size="sm">
-                                Edit
-                              </Button>
-                            </Link>
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs text-gray-500">
-                                Streak: {habit.streak}
-                              </span>
-                              <Flame className="h-4 w-4 text-orange-500" />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
+                        habit={habit}
+                        userId={user.id}
+                      />
                     ))}
                   </div>
                 )}

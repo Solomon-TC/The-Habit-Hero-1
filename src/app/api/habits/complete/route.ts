@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true, // Still mark as success since the habit was completed
         logData,
-        error: `Habit completed but XP not awarded: ${xpResult.error.message || "Unknown error"}`,
+        error: `Habit completed but XP not awarded: ${xpResult.error}`,
         xpGained: 0,
       });
     }

@@ -146,6 +146,18 @@ export async function completeMilestone(
       );
     }
 
+    // Get the updated user data to confirm XP was awarded
+    const { data: updatedUser } = await supabase
+      .from("users")
+      .select("xp, level")
+      .eq("id", userId)
+      .single();
+
+    console.log(
+      "[SERVER] Updated user data after milestone XP award:",
+      updatedUser,
+    );
+
     // Recalculate the goal progress
     await calculateGoalProgress(goalId);
 
@@ -157,6 +169,8 @@ export async function completeMilestone(
       newLevel: xpResult?.newLevel || 1,
       milestoneName: milestone.title || "Milestone",
       type: "milestone",
+      updatedXP: updatedUser?.xp || 0,
+      updatedLevel: updatedUser?.level || 1,
     };
 
     console.log(`[SERVER] Returning milestone completion result:`, result);

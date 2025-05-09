@@ -253,6 +253,15 @@ export async function logHabitCompletion(
       );
     }
 
+    // Get the updated user data to confirm XP was awarded
+    const { data: updatedUser } = await adminClient
+      .from("users")
+      .select("xp, level")
+      .eq("id", userId)
+      .single();
+
+    console.log("Updated user data after XP award:", updatedUser);
+
     // Return the log data along with level up information
     return {
       ...logData,
@@ -261,6 +270,8 @@ export async function logHabitCompletion(
       newLevel: xpResult.newLevel,
       xpGained: xpValue,
       habitName: habit.name || "Habit",
+      updatedXP: updatedUser?.xp || 0,
+      updatedLevel: updatedUser?.level || 1,
     };
   } catch (error) {
     console.error(`Unexpected error awarding XP for habit:`, error);
