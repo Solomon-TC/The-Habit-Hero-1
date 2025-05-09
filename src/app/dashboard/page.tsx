@@ -209,8 +209,64 @@ export default async function Dashboard() {
                   </Link>
                 </div>
               </CardHeader>
-              <CardContent className="p-4">
-                <HabitTracker habits={habitsWithProgress} userId={user.id} />
+              <CardContent>
+                {habits.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-gray-600 mb-4">
+                      You haven't created any habits yet
+                    </p>
+                    <Link href="/dashboard/habits">
+                      <Button className="bg-purple-600 hover:bg-purple-700">
+                        Create Your First Habit
+                      </Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {habitsWithProgress.slice(0, 3).map((habit) => (
+                      <Card
+                        key={habit.id}
+                        className="overflow-hidden hover:border-purple-200 transition-all"
+                      >
+                        <CardHeader className="pb-2">
+                          <div className="flex justify-between items-start">
+                            <CardTitle className="text-base">
+                              {habit.name}
+                            </CardTitle>
+                            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-0.5 rounded">
+                              {habit.isCompleted ? "Completed" : "In Progress"}
+                            </span>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-2">
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Progress</span>
+                            <span>
+                              {habit.progress} / {habit.target_count}
+                            </span>
+                          </div>
+                          <Progress
+                            value={(habit.progress / habit.target_count) * 100}
+                            className="h-2 bg-gray-200"
+                          />
+                          <div className="flex justify-between mt-3">
+                            <Link href={`/dashboard/habits?edit=${habit.id}`}>
+                              <Button variant="outline" size="sm">
+                                Edit
+                              </Button>
+                            </Link>
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs text-gray-500">
+                                Streak: {habit.streak}
+                              </span>
+                              <Flame className="h-4 w-4 text-orange-500" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -374,12 +430,6 @@ export default async function Dashboard() {
                 </Card>
               </TabsContent>
             </Tabs>
-          </div>
-
-          {/* Debug XP Tools */}
-          <div className="mt-8">
-            <h2 className="text-xl font-semibold mb-4">Debug Tools</h2>
-            <DebugXPButton />
           </div>
         </div>
       </main>
