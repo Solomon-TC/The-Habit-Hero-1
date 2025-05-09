@@ -21,16 +21,19 @@ export default async function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>Profile</CardTitle>
-            <CardDescription>
-              You need to be logged in to view your profile
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
+      <>
+        <DashboardNavbar />
+        <div className="container mx-auto px-4 py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile</CardTitle>
+              <CardDescription>
+                You need to be logged in to view your profile
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </>
     );
   }
 
