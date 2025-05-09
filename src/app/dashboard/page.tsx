@@ -222,8 +222,8 @@ export default async function Dashboard() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="grid gap-4">
-                    {habitsWithProgress.slice(0, 3).map((habit) => (
+                  <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2">
+                    {habitsWithProgress.map((habit) => (
                       <Card
                         key={habit.id}
                         className="overflow-hidden hover:border-purple-200 transition-all"
@@ -295,8 +295,8 @@ export default async function Dashboard() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="grid gap-4">
-                    {goals.slice(0, 3).map((goal) => (
+                  <div className="grid gap-4 max-h-[400px] overflow-y-auto pr-2">
+                    {goals.map((goal) => (
                       <Card
                         key={goal.id}
                         className="overflow-hidden hover:border-purple-200 transition-all"
