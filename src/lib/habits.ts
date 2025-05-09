@@ -88,6 +88,8 @@ export async function createHabit(
     return null;
   }
 
+  // Achievement system has been removed
+
   return data;
 }
 
@@ -237,6 +239,8 @@ export async function logHabitCompletion(
         habitName: habit.name || "Habit",
       };
     }
+
+    // Achievement system has been removed
 
     if (xpResult.leveledUp) {
       // Could trigger a notification or animation here

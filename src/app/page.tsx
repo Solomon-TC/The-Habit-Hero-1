@@ -67,94 +67,87 @@ export default async function Home() {
       <NavbarWrapper />
       <Hero />
 
-      {/* Features Section */}
-      <section className="py-24 bg-white" id="features">
+      {/* Main Content with Side-by-Side Layout */}
+      <div className="bg-white py-12">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 text-synthwave-neonPurple">
-              Gamify Your Habits
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Turn your daily routines into exciting challenges with our
-              gamified habit tracking system.
-            </p>
-          </div>
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* Left Column - Features */}
+            <section id="features" className="order-2 lg:order-1">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-3 text-synthwave-neonPurple">
+                  Gamify Your Habits
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Turn your daily routines into exciting challenges with our
+                  gamified habit tracking system.
+                </p>
+                <FeatureTabs />
+              </div>
 
-          <FeatureTabs />
-        </div>
-      </section>
+              {/* Stats Section Integrated */}
+              <div className="bg-gradient-to-r from-synthwave-neonPurple to-synthwave-highlight text-white p-6 rounded-xl my-8">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-3xl font-bold mb-1">10M+</div>
+                    <div className="text-white text-sm">Habits Tracked</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold mb-1">87%</div>
+                    <div className="text-white text-sm">Success Rate</div>
+                  </div>
+                  <div>
+                    <div className="text-3xl font-bold mb-1">500K+</div>
+                    <div className="text-white text-sm">Happy Users</div>
+                  </div>
+                </div>
+              </div>
 
-      {/* Interactive Demo Section */}
-      <section className="py-20 bg-gradient-to-r from-purple-50 to-blue-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4 text-synthwave-neonPurple">
-              Try It Yourself
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Experience how our habit tracker works with this interactive demo.
-            </p>
-          </div>
+              {/* Testimonials Section */}
+              <div className="my-8">
+                <h2 className="text-2xl font-bold mb-3 text-synthwave-neonPurple">
+                  Success Stories
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  See how our app has helped people transform their habits and
+                  lives.
+                </p>
+                <TestimonialCarousel />
+              </div>
+            </section>
 
-          <HabitDemo />
-        </div>
-      </section>
+            {/* Right Column - Demo and Pricing */}
+            <section className="order-1 lg:order-2">
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-3 text-synthwave-neonPurple">
+                  Try It Yourself
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Experience how our habit tracker works with this interactive
+                  demo.
+                </p>
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-xl">
+                  <HabitDemo />
+                </div>
+              </div>
 
-      {/* Stats Section */}
-      <section className="py-20 bg-gradient-to-r from-synthwave-neonPurple to-synthwave-highlight text-white">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            <div>
-              <div className="text-4xl font-bold mb-2">10M+</div>
-              <div className="text-white">Habits Tracked</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">87%</div>
-              <div className="text-white">Success Rate</div>
-            </div>
-            <div>
-              <div className="text-4xl font-bold mb-2">500K+</div>
-              <div className="text-synthwave-neonPurple/80">Happy Users</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-24 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 text-synthwave-neonPurple">
-              Success Stories
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              See how our app has helped people transform their habits and
-              lives.
-            </p>
-          </div>
-
-          <TestimonialCarousel />
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section className="py-24 bg-white" id="pricing">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold mb-4 text-synthwave-neonPurple">
-              Simple, Transparent Pricing
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Choose the perfect plan for your habit-building journey.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {plans?.map((item: any) => (
-              <PricingCard key={item.id} item={item} user={user} />
-            ))}
+              {/* Pricing Section */}
+              <div className="my-8" id="pricing">
+                <h2 className="text-2xl font-bold mb-3 text-synthwave-neonPurple">
+                  Simple, Transparent Pricing
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  Choose the perfect plan for your habit-building journey.
+                </p>
+                <div className="grid md:grid-cols-3 gap-4">
+                  {plans?.map((item: any) => (
+                    <PricingCard key={item.id} item={item} user={user} />
+                  ))}
+                </div>
+              </div>
+            </section>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* CTA Section */}
       <CtaSection />

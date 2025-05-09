@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { DebugXPButton } from "@/components/debug-xp-button";
 import LevelProgress from "@/components/level-progress";
-import GameNotifications from "@/components/game-notifications";
 
 import { ClientMilestoneForm } from "./client-milestone-form";
 
@@ -137,7 +136,6 @@ export default async function Dashboard() {
 
   return (
     <SubscriptionCheck>
-      <GameNotifications />
       <DashboardNavbar />
       <main className="w-full bg-gray-50 min-h-screen">
         <div className="container mx-auto px-4 py-8 flex flex-col gap-8">
@@ -326,44 +324,7 @@ export default async function Dashboard() {
             </Card>
           </div>
 
-          {/* Achievements Card */}
-          <Card className="mt-6 overflow-hidden">
-            <CardHeader>
-              <CardTitle>Your Achievements</CardTitle>
-              <CardDescription>
-                Complete habits and earn badges as you progress on your journey.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex flex-col items-center p-4 bg-purple-50 rounded-lg border border-purple-100">
-                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-2">
-                  <span className="text-2xl">🔥</span>
-                </div>
-                <h3 className="font-semibold">Streak Master</h3>
-                <p className="text-sm text-center text-gray-600">
-                  Maintain a 5-day streak
-                </p>
-              </div>
-              <div className="flex flex-col items-center p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                  <span className="text-2xl">⭐</span>
-                </div>
-                <h3 className="font-semibold">Early Bird</h3>
-                <p className="text-sm text-center text-gray-600">
-                  Complete a habit before 8am
-                </p>
-              </div>
-              <div className="flex flex-col items-center p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-2">
-                  <span className="text-2xl">🏆</span>
-                </div>
-                <h3 className="font-semibold">Habit Champion</h3>
-                <p className="text-sm text-center text-gray-600">
-                  Complete all habits for a week
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Achievements Card Removed */}
 
           {/* Hidden Tabs for Profile */}
           <div className="hidden">
