@@ -48,11 +48,10 @@ const nextConfig = {
 
     return config;
   },
-  // Explicitly tell Next.js to ignore Supabase Edge Functions
+  // External packages configuration
   serverExternalPackages: [],
   experimental: {
     forceSwcTransforms: true,
-    // Exclude Supabase functions from server components
     serverActions: {
       bodySizeLimit: "2mb",
     },

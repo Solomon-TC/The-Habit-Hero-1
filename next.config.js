@@ -61,7 +61,7 @@ const nextConfig = {
 
     return config;
   },
-  // Updated experimental options
+  // External packages configuration
   serverExternalPackages: [],
   experimental: {
     forceSwcTransforms: true,
