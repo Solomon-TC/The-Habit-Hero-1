@@ -18,6 +18,7 @@ export async function SubscriptionCheck({
 
   if (!user) {
     redirect("/sign-in");
+    return null; // This line is unreachable but prevents TypeScript errors
   }
 
   try {
@@ -48,6 +49,7 @@ export async function SubscriptionCheck({
 
     // If no active subscription is found, redirect to pricing page
     redirect(redirectTo);
+    return null; // This line is unreachable but prevents TypeScript errors
   } catch (error) {
     console.error("Unexpected error in SubscriptionCheck:", error);
     // On error, allow access to prevent locking users out
