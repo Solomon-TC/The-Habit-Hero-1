@@ -1,4 +1,4 @@
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import type { Database } from "@/types/supabase";
 
 // Create a singleton instance to avoid multiple instances
@@ -27,26 +27,38 @@ export function getSupabaseClient() {
 
   if (typeof window === "undefined") {
     // Server-side - create a new client each time with the same options
-    return createClientComponentClient<Database>(clientOptions);
+    return createBrowserClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      clientOptions,
+    );
   }
 
   // For client-side, we want to maintain a single instance to ensure consistent session handling
   if (!supabaseClient) {
     try {
       // Create a new client with explicit session persistence
-      supabaseClient = createClientComponentClient<Database>(clientOptions);
+      supabaseClient = createBrowserClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        clientOptions,
+      );
 
       lastInitTime = Date.now();
       console.log("Supabase client initialized with persistent session");
     } catch (error) {
       console.error("Error initializing Supabase client:", error);
       // Return a new instance as fallback with the same persistence options
-      return createClientComponentClient<Database>({
-        options: {
-          persistSession: true,
-          autoRefreshToken: true,
+      return createBrowserClient<Database>(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          options: {
+            persistSession: true,
+            autoRefreshToken: true,
+          },
         },
-      });
+      );
     }
   }
 

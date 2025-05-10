@@ -1,4 +1,4 @@
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 
 /**
  * Comprehensive session refresh utility that tries multiple methods to ensure a valid session
@@ -6,20 +6,24 @@ import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
  */
 export async function refreshSessionComprehensive() {
   // Use the singleton client to maintain consistent session state
-  const supabase = createClientComponentClient({
-    options: {
-      persistSession: true,
-      autoRefreshToken: true,
-      // Explicitly set cookie options to ensure proper storage
-      cookieOptions: {
-        name: "sb-auth-token",
-        lifetime: 60 * 60 * 24 * 7, // 1 week
-        sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      options: {
+        persistSession: true,
+        autoRefreshToken: true,
+        // Explicitly set cookie options to ensure proper storage
+        cookieOptions: {
+          name: "sb-auth-token",
+          lifetime: 60 * 60 * 24 * 7, // 1 week
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+        },
       },
     },
-  });
+  );
   let sessionData = null;
   let userData = null;
   let success = false;
@@ -129,12 +133,16 @@ export async function refreshSessionComprehensive() {
  */
 export async function checkAuthentication() {
   // First try to get the session directly - this is faster and more reliable
-  const supabase = createClientComponentClient({
-    options: {
-      persistSession: true,
-      autoRefreshToken: true,
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      options: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
     },
-  });
+  );
 
   try {
     // Try to get the session directly first

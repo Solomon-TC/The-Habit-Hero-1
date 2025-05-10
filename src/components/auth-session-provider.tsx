@@ -7,7 +7,7 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { checkAuthentication } from "@/lib/auth-helpers";
 
 type AuthSessionContextType = {
@@ -51,12 +51,16 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       setError(null);
 
       // Create a client with explicit persistence options
-      const supabase = createClientComponentClient({
-        options: {
-          persistSession: true,
-          autoRefreshToken: true,
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          options: {
+            persistSession: true,
+            autoRefreshToken: true,
+          },
         },
-      });
+      );
 
       // First try to get the session directly to avoid unnecessary refreshes
       const { data: directSession } = await supabase.auth.getSession();
@@ -138,12 +142,16 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initSession = async () => {
       // First try to get the session directly using the Supabase client
-      const supabase = createClientComponentClient({
-        options: {
-          persistSession: true,
-          autoRefreshToken: true,
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          options: {
+            persistSession: true,
+            autoRefreshToken: true,
+          },
         },
-      });
+      );
 
       const { data: sessionData } = await supabase.auth.getSession();
 

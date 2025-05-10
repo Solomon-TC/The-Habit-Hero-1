@@ -16,11 +16,6 @@ const nextConfig = {
   },
   // No need for explicit favicon configuration with files in public directory
   assetPrefix: "",
-  experimental: {
-    appDir: true,
-  },
-  // Optimize compilation
-  swcMinify: true,
   poweredByHeader: false,
   // Ensure tempo-devtools is properly transpiled
   transpilePackages: ["tempo-devtools"],
@@ -66,15 +61,13 @@ const nextConfig = {
 
     return config;
   },
-  // Explicitly tell Next.js to ignore Supabase Edge Functions
+  // Updated experimental options
   experimental: {
-    serverComponentsExternalPackages: [],
+    serverExternalPackages: [],
     forceSwcTransforms: true,
-    // Exclude Supabase functions from server components
     serverActions: {
       bodySizeLimit: "2mb",
     },
-    appDir: true,
   },
 };
 

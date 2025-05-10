@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { toast } from "./ui/use-toast";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 
 type FeedbackUser = {
   name: string | null;
@@ -35,7 +35,10 @@ export function FeedbackLeaderboard({
   const [feedback, setFeedback] = useState<Feedback[]>(initialFeedback);
   const [userUpvotes, setUserUpvotes] = useState<string[]>(initialUserUpvotes);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  );
 
   // Fetch feedback data
   const fetchFeedback = async () => {
