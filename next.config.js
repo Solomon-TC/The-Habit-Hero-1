@@ -19,6 +19,8 @@ const nextConfig = {
   poweredByHeader: false,
   // Ensure tempo-devtools is properly transpiled
   transpilePackages: ["tempo-devtools"],
+  // External packages configuration - moved from experimental
+  serverExternalPackages: [],
   // Disable webpack persistent caching to prevent file system errors
   webpack: (config, { dev }) => {
     if (dev) {
@@ -61,8 +63,6 @@ const nextConfig = {
 
     return config;
   },
-  // External packages configuration
-  serverExternalPackages: [],
   experimental: {
     forceSwcTransforms: true,
     serverActions: {
