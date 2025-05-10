@@ -1,2 +1,2 @@
-// Re-export from utils/supabase-server to maintain compatibility
-export * from "../utils/supabase-server";
+// Re-export from lib/supabase-server to maintain compatibility
+export * from "@/lib/supabase-server";

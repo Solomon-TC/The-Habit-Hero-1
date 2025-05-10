@@ -6,10 +6,10 @@ const nextConfig = {
   output: "standalone",
   pageExtensions: ["tsx", "ts", "jsx", "js", "md", "mdx"],
   images: {
-    domains: [
-      "api.dicebear.com",
-      "images.unsplash.com",
-      "mkrahlftoiiugjfesudw.supabase.co",
+    remotePatterns: [
+      { hostname: "api.dicebear.com" },
+      { hostname: "images.unsplash.com" },
+      { hostname: "mkrahlftoiiugjfesudw.supabase.co" },
     ],
     unoptimized: process.env.NODE_ENV === "production",
     formats: ["image/avif", "image/webp"],
@@ -19,8 +19,6 @@ const nextConfig = {
   poweredByHeader: false,
   // Ensure tempo-devtools is properly transpiled
   transpilePackages: ["tempo-devtools"],
-  // External packages configuration - moved from experimental
-  serverExternalPackages: [],
   // Disable webpack persistent caching to prevent file system errors
   webpack: (config, { dev }) => {
     if (dev) {
@@ -59,6 +57,7 @@ const nextConfig = {
       "https://deno.land/std@0.168.0/http/server.ts": false,
       "https://esm.sh/stripe@13.6.0?target=deno": false,
       "https://esm.sh/@supabase/supabase-js@2": false,
+      path: require.resolve("path-browserify"),
     };
 
     return config;

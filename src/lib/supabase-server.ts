@@ -24,3 +24,8 @@ export const createServerSupabaseClient = async () => {
     },
   );
 };
+
+// Add createClient function for compatibility with debug routes
+export function createClient() {
+  return createServerSupabaseClient();
+}
