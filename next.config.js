@@ -62,8 +62,8 @@ const nextConfig = {
     return config;
   },
   // Updated experimental options
+  serverExternalPackages: [],
   experimental: {
-    serverExternalPackages: [],
     forceSwcTransforms: true,
     serverActions: {
       bodySizeLimit: "2mb",

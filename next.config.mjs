@@ -12,8 +12,7 @@ const nextConfig = {
     ],
     unoptimized: process.env.NODE_ENV === "production",
   },
-  // Ensure SWC is used for compilation
-  swcMinify: true,
+  // SWC is used by default in Next.js 15+
   // Ensure tempo-devtools is properly transpiled
   transpilePackages: ["tempo-devtools"],
   // Disable webpack persistent caching to prevent file system errors
@@ -50,8 +49,8 @@ const nextConfig = {
     return config;
   },
   // Explicitly tell Next.js to ignore Supabase Edge Functions
+  serverExternalPackages: [],
   experimental: {
-    serverComponentsExternalPackages: [],
     forceSwcTransforms: true,
     // Exclude Supabase functions from server components
     serverActions: {
