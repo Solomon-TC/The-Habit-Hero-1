@@ -44,6 +44,13 @@ next-env.d.ts
 **/tempobook/dynamic/
 **/tempobook/storyboards/
 
+# Build output
+.vercel
+.turbo
+out
+build
+dist
+
 # I want to ignore the git folder
 .git
 

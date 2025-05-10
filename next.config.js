@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 
 const nextConfig = {
-  // Completely exclude Supabase functions from the build
+  // Optimize build output
   distDir: ".next",
+  output: "standalone",
   pageExtensions: ["tsx", "ts", "jsx", "js", "md", "mdx"],
   images: {
     domains: [
@@ -18,8 +19,9 @@ const nextConfig = {
   experimental: {
     appDir: true,
   },
-  // Ensure SWC is used for compilation
+  // Optimize compilation
   swcMinify: true,
+  poweredByHeader: false,
   // Ensure tempo-devtools is properly transpiled
   transpilePackages: ["tempo-devtools"],
   // Disable webpack persistent caching to prevent file system errors

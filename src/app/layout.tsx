@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <Script src="https://api.tempo.new/proxy-asset?url=https://storage.googleapis.com/tempo-public-assets/error-handling.js" />
-      <body className={`${inter.className} min-h-screen bg-white`}>
+      <body className={`${inter.className} min-h-screen bg-background`}>
         <ClientAuthProvider>{children}</ClientAuthProvider>
         <TempoInit />
       </body>
