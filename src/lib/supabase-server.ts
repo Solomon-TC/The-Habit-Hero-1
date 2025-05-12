@@ -13,10 +13,10 @@ export async function createServerSupabaseClient() {
           return cookie?.value;
         },
         async set(name, value, options) {
-          cookies().set({ name, value, ...options });
+          await cookies().set({ name, value, ...options });
         },
         async remove(name, options) {
-          cookies().set({ name, value: "", ...options });
+          await cookies().set({ name, value: "", ...options });
         },
       },
     },
