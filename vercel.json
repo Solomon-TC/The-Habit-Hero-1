@@ -27,6 +27,5 @@
       ]
     }
   ],
-  "ignoreCommand": "echo 'Ignoring Supabase Edge Functions'",
   "installCommand": "npm install"
 }
