@@ -9,14 +9,17 @@ export async function createServerSupabaseClient() {
     {
       cookies: {
         async get(name) {
-          const cookie = await cookies().get(name);
+          const cookieStore = await cookies();
+          const cookie = await cookieStore.get(name);
           return cookie?.value;
         },
         async set(name, value, options) {
-          await cookies().set({ name, value, ...options });
+          const cookieStore = await cookies();
+          await cookieStore.set({ name, value, ...options });
         },
         async remove(name, options) {
-          await cookies().set({ name, value: "", ...options });
+          const cookieStore = await cookies();
+          await cookieStore.set({ name, value: "", ...options });
         },
       },
     },

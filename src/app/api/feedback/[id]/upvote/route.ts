@@ -4,10 +4,10 @@ import { cookies } from "next/headers";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: { params: { id: string } },
 ) {
   try {
-    const feedbackId = params.id;
+    const feedbackId = context.params.id;
     if (!feedbackId) {
       return NextResponse.json(
         { error: "Feedback ID is required" },
@@ -15,20 +15,21 @@ export async function POST(
       );
     }
 
-    const cookieStore = cookies();
+    // Use cookies() directly instead of storing in a variable
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
           get(name) {
-            return cookieStore.get(name)?.value;
+            const cookie = cookies().get(name);
+            return cookie?.value;
           },
           set(name, value, options) {
-            cookieStore.set({ name, value, ...options });
+            cookies().set({ name, value, ...options });
           },
           remove(name, options) {
-            cookieStore.set({ name, value: "", ...options });
+            cookies().set({ name, value: "", ...options });
           },
         },
       },
