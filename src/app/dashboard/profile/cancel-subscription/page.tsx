@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClientComponentClient } from "@supabase/ssr";
 import {
   Card,
   CardContent,
@@ -22,12 +22,7 @@ import { useAuthSession } from "@/components/auth-session-provider";
 
 export default function CancelSubscriptionPage() {
   const router = useRouter();
-  const supabase = createClientComponentClient({
-    options: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  });
+  const supabase = createClientComponentClient();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionRefreshAttempted, setSessionRefreshAttempted] = useState(false);
