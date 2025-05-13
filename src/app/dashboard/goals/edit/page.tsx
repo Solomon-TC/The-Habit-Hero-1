@@ -5,11 +5,12 @@ import { SubscriptionCheck } from "@/components/subscription-check";
 import GoalForm from "@/components/goal-form";
 import { getGoalById } from "@/lib/goals";
 
-export default async function EditGoalPage({
-  searchParams,
-}: {
-  searchParams: { id: string };
-}) {
+interface PageProps {
+  params: {};
+  searchParams: { id?: string };
+}
+
+export default async function EditGoalPage({ searchParams }: PageProps) {
   const supabase = await createServerSupabaseClient();
 
   const {
@@ -20,9 +21,7 @@ export default async function EditGoalPage({
     return redirect("/sign-in");
   }
 
-  // Ensure searchParams is properly awaited
-  const params = await Promise.resolve(searchParams);
-  const goalId = params.id;
+  const goalId = searchParams.id;
   if (!goalId) {
     return redirect("/dashboard/goals");
   }
