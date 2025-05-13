@@ -6,7 +6,7 @@ import GoalForm from "@/components/goal-form";
 import { getGoalById } from "@/lib/goals";
 
 interface PageProps {
-  params: {};
+  params: Record<string, never>;
   searchParams: { id?: string };
 }
 
