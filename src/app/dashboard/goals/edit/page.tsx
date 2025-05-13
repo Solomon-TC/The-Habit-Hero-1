@@ -1,3 +1,4 @@
+import { Metadata } from "next";
 import DashboardNavbar from "@/components/dashboard-navbar";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
@@ -5,11 +6,18 @@ import { SubscriptionCheck } from "@/components/subscription-check";
 import GoalForm from "@/components/goal-form";
 import { getGoalById } from "@/lib/goals";
 
-export default async function EditGoalPage({
-  searchParams,
-}: {
-  searchParams: { id?: string | string[] };
-}) {
+export const metadata: Metadata = {
+  title: "Edit Goal - Habit Hero",
+  description: "Edit your goal details",
+};
+
+type Props = {
+  params: {};
+  searchParams: Record<string, string | string[] | undefined>;
+};
+
+export default async function EditGoalPage(props: Props) {
+  const { searchParams } = props;
   const supabase = await createServerSupabaseClient();
 
   const {
@@ -20,7 +28,12 @@ export default async function EditGoalPage({
     return redirect("/sign-in");
   }
 
-  const goalId = searchParams.id;
+  const goalId =
+    typeof searchParams.id === "string"
+      ? searchParams.id
+      : Array.isArray(searchParams.id)
+        ? searchParams.id[0]
+        : undefined;
   if (!goalId) {
     return redirect("/dashboard/goals");
   }
