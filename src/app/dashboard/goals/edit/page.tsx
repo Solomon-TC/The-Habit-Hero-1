@@ -11,12 +11,12 @@ export const metadata: Metadata = {
   description: "Edit your goal details",
 };
 
+type SearchParams = { [key: string]: string | string[] | undefined };
+
 export default async function EditGoalPage({
-  params,
   searchParams,
 }: {
-  params: {};
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: SearchParams;
 }) {
   const supabase = await createServerSupabaseClient();
 
