@@ -14,10 +14,13 @@ export const metadata: Metadata = {
 type SearchParams = { [key: string]: string | string[] | undefined };
 
 export default async function EditGoalPage({
+  params,
   searchParams,
 }: {
-  searchParams: SearchParams;
+  params: {};
+  searchParams: Promise<SearchParams>;
 }) {
+  const resolvedSearchParams = await searchParams;
   const supabase = await createServerSupabaseClient();
 
   const {
@@ -29,10 +32,10 @@ export default async function EditGoalPage({
   }
 
   const goalId =
-    typeof searchParams.id === "string"
-      ? searchParams.id
-      : Array.isArray(searchParams.id)
-        ? searchParams.id[0]
+    typeof resolvedSearchParams.id === "string"
+      ? resolvedSearchParams.id
+      : Array.isArray(resolvedSearchParams.id)
+        ? resolvedSearchParams.id[0]
         : undefined;
   if (!goalId) {
     return redirect("/dashboard/goals");
