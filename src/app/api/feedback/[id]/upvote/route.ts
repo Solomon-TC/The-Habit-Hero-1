@@ -4,10 +4,10 @@ import { cookies } from "next/headers";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  context: { params: { id: string } },
 ) {
   try {
-    const feedbackId = params.id;
+    const feedbackId = context.params.id;
     if (!feedbackId) {
       return NextResponse.json(
         { error: "Feedback ID is required" },
