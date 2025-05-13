@@ -11,13 +11,15 @@ export const metadata: Metadata = {
   description: "Edit your goal details",
 };
 
+type PageProps = {
+  params: Record<string, never>;
+  searchParams: { [key: string]: string | string[] | undefined };
+};
+
 export default async function EditGoalPage({
   params,
   searchParams,
-}: {
-  params: {};
-  searchParams: { id?: string | string[] };
-}) {
+}: PageProps) {
   const supabase = await createServerSupabaseClient();
 
   const {
