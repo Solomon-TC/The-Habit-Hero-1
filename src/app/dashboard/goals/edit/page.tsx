@@ -5,12 +5,11 @@ import { SubscriptionCheck } from "@/components/subscription-check";
 import GoalForm from "@/components/goal-form";
 import { getGoalById } from "@/lib/goals";
 
-interface PageProps {
-  params: Record<string, never>;
+export default async function EditGoalPage({
+  searchParams,
+}: {
   searchParams: { id?: string };
-}
-
-export default async function EditGoalPage({ searchParams }: PageProps) {
+}) {
   const supabase = await createServerSupabaseClient();
 
   const {
