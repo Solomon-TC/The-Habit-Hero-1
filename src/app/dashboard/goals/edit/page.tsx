@@ -11,11 +11,11 @@ export const metadata: Metadata = {
   description: "Edit your goal details",
 };
 
-export default async function EditGoalPage({
-  searchParams,
-}: {
-  searchParams: { [key: string]: string | string[] | undefined };
+export default async function EditGoalPage(props: {
+  params: {};
+  searchParams: { id?: string | string[] };
 }) {
+  const { searchParams } = props;
   const supabase = await createServerSupabaseClient();
 
   const {
