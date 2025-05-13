@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-export async function POST(
-  request: NextRequest,
-  context: { params: { id: string } },
-) {
+type RouteContext = {
+  params: {
+    id: string;
+  };
+};
+
+export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
-    const feedbackId = context.params.id;
+    const feedbackId = params.id;
     if (!feedbackId) {
       return NextResponse.json(
         { error: "Feedback ID is required" },
