@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase-server-actions";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export async function POST(
   request: NextRequest,
-  context: { params: { id: string } },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const feedbackId = context.params.id;
+    const feedbackId = params.id;
     if (!feedbackId) {
       return NextResponse.json(
         { error: "Feedback ID is required" },
@@ -14,8 +15,25 @@ export async function POST(
       );
     }
 
-    // Use our centralized server client that already handles cookies properly
-    const supabase = await createServerSupabaseClient();
+    // Set up Supabase client with cookies
+    const cookieStore = cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name) {
+            return cookieStore.get(name)?.value;
+          },
+          set(name, value, options) {
+            cookieStore.set({ name, value, ...options });
+          },
+          remove(name, options) {
+            cookieStore.set({ name, value: "", ...options });
+          },
+        },
+      },
+    );
 
     // Get the session
     const { data: sessionData, error: sessionError } =
