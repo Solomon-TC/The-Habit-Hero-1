@@ -1,14 +1,26 @@
+import { Metadata } from "next";
 import DashboardNavbar from "@/components/dashboard-navbar";
 import { createServerSupabaseClient } from "@/lib/supabase-server";
 import { redirect } from "next/navigation";
 import { SubscriptionCheck } from "@/components/subscription-check";
 import MilestoneForm from "@/components/milestone-form";
 
-export default async function EditMilestonePage({
-  searchParams,
-}: {
-  searchParams: { id: string; goalId: string };
-}) {
+export const metadata: Metadata = {
+  title: "Edit Milestone - Habit Hero",
+  description: "Edit your milestone details",
+};
+
+type SearchParams = { [key: string]: string | string[] | undefined };
+
+interface PageProps {
+  params: Promise<{}>;
+  searchParams: Promise<SearchParams>;
+}
+
+export default async function EditMilestonePage(props: PageProps) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
+
   const supabase = await createServerSupabaseClient();
 
   const {
@@ -19,7 +31,20 @@ export default async function EditMilestonePage({
     return redirect("/sign-in");
   }
 
-  const { id: milestoneId, goalId } = searchParams;
+  const milestoneId =
+    typeof searchParams.id === "string"
+      ? searchParams.id
+      : Array.isArray(searchParams.id)
+        ? searchParams.id[0]
+        : undefined;
+
+  const goalId =
+    typeof searchParams.goalId === "string"
+      ? searchParams.goalId
+      : Array.isArray(searchParams.goalId)
+        ? searchParams.goalId[0]
+        : undefined;
+
   if (!milestoneId || !goalId) {
     return redirect("/dashboard/goals");
   }
