@@ -13,14 +13,14 @@ export const metadata: Metadata = {
 
 type SearchParams = { [key: string]: string | string[] | undefined };
 
-export default async function EditGoalPage({
-  params,
-  searchParams,
-}: {
-  params: {};
+interface PageProps {
+  params: Promise<{}>;
   searchParams: Promise<SearchParams>;
-}) {
-  const resolvedSearchParams = await searchParams;
+}
+
+export default async function EditGoalPage(props: PageProps) {
+  const params = await props.params;
+  const resolvedSearchParams = await props.searchParams;
   const supabase = await createServerSupabaseClient();
 
   const {
