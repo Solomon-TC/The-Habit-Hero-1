@@ -4,10 +4,10 @@ import { cookies } from "next/headers";
 
 export async function POST(
   request: NextRequest,
-  context: { params: { id: string } },
+  { params }: { params: { id: string } },
 ) {
   try {
-    const feedbackId = context.params.id;
+    const feedbackId = params.id;
     if (!feedbackId) {
       return NextResponse.json(
         { error: "Feedback ID is required" },
@@ -21,15 +21,18 @@ export async function POST(
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         cookies: {
-          get(name) {
-            const cookie = cookies().get(name);
+          async get(name) {
+            const cookieStore = await cookies();
+            const cookie = await cookieStore.get(name);
             return cookie?.value;
           },
-          set(name, value, options) {
-            cookies().set({ name, value, ...options });
+          async set(name, value, options) {
+            const cookieStore = await cookies();
+            await cookieStore.set({ name, value, ...options });
           },
-          remove(name, options) {
-            cookies().set({ name, value: "", ...options });
+          async remove(name, options) {
+            const cookieStore = await cookies();
+            await cookieStore.set({ name, value: "", ...options });
           },
         },
       },
