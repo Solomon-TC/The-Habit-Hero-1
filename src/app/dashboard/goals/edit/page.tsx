@@ -8,7 +8,7 @@ import { getGoalById } from "@/lib/goals";
 export default async function EditGoalPage({
   searchParams,
 }: {
-  searchParams: { id?: string };
+  searchParams: { id?: string | string[] };
 }) {
   const supabase = await createServerSupabaseClient();
 
