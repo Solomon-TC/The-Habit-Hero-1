@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { createServerSupabaseClient } from "@/lib/supabase-server-actions";
+
+type Params = { id: string };
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Params },
 ) {
   try {
     const feedbackId = params.id;
@@ -15,25 +16,8 @@ export async function POST(
       );
     }
 
-    // Set up Supabase client with cookies
-    const cookieStore = cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name) {
-            return cookieStore.get(name)?.value;
-          },
-          set(name, value, options) {
-            cookieStore.set({ name, value, ...options });
-          },
-          remove(name, options) {
-            cookieStore.set({ name, value: "", ...options });
-          },
-        },
-      },
-    );
+    // Use our centralized server client that already handles cookies properly
+    const supabase = await createServerSupabaseClient();
 
     // Get the session
     const { data: sessionData, error: sessionError } =
