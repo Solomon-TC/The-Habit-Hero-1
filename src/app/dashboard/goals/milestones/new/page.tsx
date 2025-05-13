@@ -5,11 +5,16 @@ import { SubscriptionCheck } from "@/components/subscription-check";
 import MilestoneForm from "@/components/milestone-form";
 import { getGoalById } from "@/lib/goals";
 
-export default async function NewMilestonePage({
-  searchParams,
-}: {
-  searchParams: { goalId: string };
-}) {
+type SearchParams = { [key: string]: string | string[] | undefined };
+
+interface PageProps {
+  params: Promise<{}>;
+  searchParams: Promise<SearchParams>;
+}
+
+export default async function NewMilestonePage(props: PageProps) {
+  const params = await props.params;
+  const searchParams = await props.searchParams;
   const supabase = await createServerSupabaseClient();
 
   const {
@@ -20,9 +25,13 @@ export default async function NewMilestonePage({
     return redirect("/sign-in");
   }
 
-  // Properly await searchParams to fix the dynamic API error
-  const params = await searchParams;
-  const goalId = params.goalId;
+  const goalId =
+    typeof searchParams.goalId === "string"
+      ? searchParams.goalId
+      : Array.isArray(searchParams.goalId)
+        ? searchParams.goalId[0]
+        : undefined;
+
   if (!goalId) {
     return redirect("/dashboard/goals");
   }
