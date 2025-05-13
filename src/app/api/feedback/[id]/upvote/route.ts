@@ -1,14 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase-server-actions";
 
-type Params = { id: string };
-
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Params },
-) {
+export async function POST(request: NextRequest) {
   try {
-    const feedbackId = params.id;
+    // Extract the feedback ID from the URL path
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split("/");
+    const feedbackId = pathParts[pathParts.length - 2]; // Get the ID from the path
+
     if (!feedbackId) {
       return NextResponse.json(
         { error: "Feedback ID is required" },
