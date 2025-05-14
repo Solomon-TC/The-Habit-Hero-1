@@ -63,10 +63,12 @@ const nextConfig = {
     return config;
   },
   experimental: {
-    forceSwcTransforms: true,
+    // Enable server actions with increased body size limit
     serverActions: {
       bodySizeLimit: "2mb",
     },
+    // Force SWC transforms for better compatibility
+    forceSwcTransforms: true,
   },
 };
 

@@ -12,6 +12,13 @@ export async function SubscriptionCheck({
   redirectTo = "/pricing",
 }: SubscriptionCheckProps) {
   const supabase = await createClient();
+
+  if (!supabase) {
+    // If we can't create a client, allow access rather than blocking users
+    console.error("Failed to create Supabase client in SubscriptionCheck");
+    return <>{children}</>;
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();

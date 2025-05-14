@@ -5,6 +5,13 @@ export async function GET() {
   try {
     const supabase = await createClient();
 
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Failed to initialize database client" },
+        { status: 500 },
+      );
+    }
+
     // Get all users
     const { data: users, error } = await supabase
       .from("users")

@@ -18,6 +18,13 @@ export async function POST(request: NextRequest) {
     // Use our centralized server client that already handles cookies properly
     const supabase = await createServerSupabaseClient();
 
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Failed to initialize database client" },
+        { status: 500 },
+      );
+    }
+
     // Get the session
     const { data: sessionData, error: sessionError } =
       await supabase.auth.getSession();

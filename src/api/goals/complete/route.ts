@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Update goal progress and potentially award XP
     const result = await updateGoalProgress(goalId, progress);
 
-    if ("error" in result) {
+    if ("error" in result && result.error) {
       console.error(`[API] Error updating goal progress:`, result.error);
       return NextResponse.json({ error: result.error }, { status: 500 });
     }

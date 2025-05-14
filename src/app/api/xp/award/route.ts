@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Authenticate the user
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     // Award the XP
     const result = await awardXP(userId, amount, reason, sourceId);
 
-    if (result.error) {
+    if ("error" in result && result.error) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 

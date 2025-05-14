@@ -78,44 +78,34 @@ export async function GET(request: NextRequest) {
     }
 
     // Handle case where we couldn't get a user or session
-    if (userError || sessionError) {
-      const error = userError || sessionError;
-      // Don't treat this as an error if it's just an auth session missing error
-      if (
-        error &&
-        error.message &&
-        error.message.includes("Auth session missing")
-      ) {
-        return NextResponse.json(
-          {
-            success: false,
-            session: false,
-            user: null,
-            requiresSignIn: true,
-            message: "Auth session missing - please sign in",
-          },
-          { status: 200 },
-        ); // Return 200 as this is an expected state
-      }
-
-      console.error("Error getting user/session:", error);
+    const error = userError || sessionError;
+    // Don't treat this as an error if it's just an auth session missing error
+    if (
+      error &&
+      error.message &&
+      error.message.includes("Auth session missing")
+    ) {
       return NextResponse.json(
         {
           success: false,
-          error: "Failed to get user",
-          details: error ? error.message : "Unknown error",
+          session: false,
+          user: null,
+          requiresSignIn: true,
+          message: "Auth session missing - please sign in",
         },
-        { status: 401 },
-      );
+        { status: 200 },
+      ); // Return 200 as this is an expected state
     }
 
-    // No user found but no error either
-    return NextResponse.json({
-      success: false,
-      session: false,
-      user: null,
-      requiresSignIn: true,
-    });
+    console.error("Error getting user/session:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Failed to get user",
+        details: error ? error.message : "Unknown error",
+      },
+      { status: 401 },
+    );
   } catch (err) {
     console.error("Error in auth refresh API:", err);
     return NextResponse.json(
