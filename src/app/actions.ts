@@ -1,129 +1,46 @@
 "use server";
 
-import { createClient } from "../../supabase/server";
-import { encodedRedirect } from "@/utils/utils";
-import { headers } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-export const signUpAction = async (formData: FormData) => {
-  const email = formData.get("email")?.toString();
-  const password = formData.get("password")?.toString();
-  const fullName = formData.get("full_name")?.toString() || "";
-  const supabase = await createClient();
+function encodedRedirect(
+  type: "success" | "error",
+  message: string,
+  redirectTo?: string,
+) {
+  const searchParams = new URLSearchParams();
+  searchParams.set(type, message);
+  return redirect(`${redirectTo || ""}?${searchParams.toString()}`);
+}
 
-  if (!email || !password) {
-    return encodedRedirect(
-      "error",
-      "/sign-up",
-      "Email and password are required",
-    );
-  }
-
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-        email: email,
-      },
-    },
-  });
-
-  if (error) {
-    return encodedRedirect("error", "/sign-up", error.message);
-  }
-
-  if (user) {
-    try {
-      // Import the createClient function from the server module
-      const { createServiceRoleClient } = await import(
-        "../lib/supabase-server-actions"
-      );
-
-      // Create a service role client that bypasses RLS
-      const adminClient = createServiceRoleClient();
-
-      if (!adminClient) {
-        // Error handling without console.error
-        return encodedRedirect(
-          "error",
-          "/sign-up",
-          "Failed to create user profile",
-        );
-      }
-
-      // First check if the user already exists in the users table
-      const { data: existingUser, error: checkError } = await adminClient
-        .from("users")
-        .select("id")
-        .eq("id", user.id)
-        .maybeSingle();
-
-      if (checkError && checkError.code !== "PGRST116") {
-        return encodedRedirect(
-          "error",
-          "/sign-up",
-          "Failed to check user profile: " + checkError.message,
-        );
-      }
-
-      // Only insert if the user doesn't already exist
-      if (!existingUser) {
-        const { error: updateError } = await adminClient.from("users").insert({
-          id: user.id,
-          user_id: user.id,
-          name: fullName,
-          email: email,
-          token_identifier: user.id,
-          created_at: new Date().toISOString(),
-          xp: 0,
-          level: 1,
-          updated_at: new Date().toISOString(),
-        });
-
-        if (updateError) {
-          // Error handling without console.error
-          return encodedRedirect(
-            "error",
-            "/sign-up",
-            "Failed to create user profile: " + updateError.message,
-          );
-        }
-      }
-
-      if (updateError) {
-        // Error handling without console.error
-        return encodedRedirect(
-          "error",
-          "/sign-up",
-          "Failed to create user profile: " + updateError.message,
-        );
-      }
-    } catch (err) {
-      // Error handling without console.error
-      return encodedRedirect(
-        "error",
-        "/sign-up",
-        "An error occurred while creating your profile",
-      );
-    }
-  }
-
-  return encodedRedirect(
-    "success",
-    "/sign-up",
-    "Thanks for signing up! Please check your email for a verification link.",
-  );
-};
-
-export const signInAction = async (formData: FormData) => {
+export async function signInAction(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
-  const supabase = await createClient();
+  const redirectTo = formData.get("redirectTo") as string;
+
+  if (!email || !password) {
+    return encodedRedirect("error", "Email and password are required");
+  }
+
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name, value, options) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name, options) {
+          cookieStore.set({ name, value: "", ...options });
+        },
+      },
+    },
+  );
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
@@ -131,90 +48,186 @@ export const signInAction = async (formData: FormData) => {
   });
 
   if (error) {
-    return encodedRedirect("error", "/sign-in", error.message);
+    return encodedRedirect("error", error.message);
   }
 
-  return redirect("/dashboard");
-};
+  return redirect(redirectTo || "/dashboard");
+}
 
-export const forgotPasswordAction = async (formData: FormData) => {
-  const email = formData.get("email")?.toString();
-  const supabase = await createClient();
-  const callbackUrl = formData.get("callbackUrl")?.toString();
+export async function signUpAction(formData: FormData) {
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const full_name = formData.get("full_name") as string;
 
-  if (!email) {
-    return encodedRedirect("error", "/forgot-password", "Email is required");
+  if (!email || !password || !full_name) {
+    return encodedRedirect("error", "All fields are required");
   }
 
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {});
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name, value, options) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name, options) {
+          cookieStore.set({ name, value: "", ...options });
+        },
+      },
+    },
+  );
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name,
+      },
+    },
+  });
 
   if (error) {
-    return encodedRedirect(
-      "error",
-      "/forgot-password",
-      "Could not reset password",
-    );
+    return encodedRedirect("error", error.message);
   }
 
-  if (callbackUrl) {
-    return redirect(callbackUrl);
+  if (data?.user) {
+    // Update the user's profile with the new name
+    const { error } = await supabase
+      .from("users")
+      .update({ name: full_name })
+      .eq("id", data.user.id);
+
+    if (error) {
+      // Error handling without console.error
+      return encodedRedirect(
+        "error",
+        "Account created but profile update failed. Please update your profile later.",
+      );
+    }
+
+    // Check if email confirmation is required
+    if (!data.session) {
+      return encodedRedirect(
+        "success",
+        "Please check your email for a confirmation link.",
+      );
+    }
+
+    return redirect("/dashboard");
+  }
+
+  return encodedRedirect("error", "An unexpected error occurred");
+}
+
+export async function forgotPasswordAction(formData: FormData) {
+  const email = formData.get("email") as string;
+
+  if (!email) {
+    return encodedRedirect("error", "Email is required");
+  }
+
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name, value, options) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name, options) {
+          cookieStore.set({ name, value: "", ...options });
+        },
+      },
+    },
+  );
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
+  });
+
+  if (error) {
+    return encodedRedirect("error", error.message);
   }
 
   return encodedRedirect(
     "success",
-    "/forgot-password",
-    "Check your email for a link to reset your password.",
+    "Password reset link sent. Please check your email.",
   );
-};
+}
 
-export const resetPasswordAction = async (formData: FormData) => {
-  const supabase = await createClient();
-
+export async function resetPasswordAction(formData: FormData) {
   const password = formData.get("password") as string;
-  const confirmPassword = formData.get("confirmPassword") as string;
 
-  if (!password || !confirmPassword) {
-    encodedRedirect(
-      "error",
-      "/protected/reset-password",
-      "Password and confirm password are required",
-    );
+  if (!password) {
+    return encodedRedirect("error", "Password is required");
   }
 
-  if (password !== confirmPassword) {
-    encodedRedirect(
-      "error",
-      "/dashboard/reset-password",
-      "Passwords do not match",
-    );
-  }
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name, value, options) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name, options) {
+          cookieStore.set({ name, value: "", ...options });
+        },
+      },
+    },
+  );
 
   const { error } = await supabase.auth.updateUser({
-    password: password,
+    password,
   });
 
   if (error) {
-    encodedRedirect(
-      "error",
-      "/dashboard/reset-password",
-      "Password update failed",
-    );
+    return encodedRedirect("error", error.message);
   }
 
-  encodedRedirect("success", "/protected/reset-password", "Password updated");
-};
+  return encodedRedirect(
+    "success",
+    "Password updated successfully. Please sign in with your new password.",
+    "/sign-in",
+  );
+}
 
-export const signOutAction = async () => {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  return redirect("/sign-in");
-};
+export async function checkUserSubscription(userId: string) {
+  const cookieStore = cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name) {
+          return cookieStore.get(name)?.value;
+        },
+        set(name, value, options) {
+          cookieStore.set({ name, value, ...options });
+        },
+        remove(name, options) {
+          cookieStore.set({ name, value: "", ...options });
+        },
+      },
+    },
+  );
 
-export const checkUserSubscription = async (userId: string) => {
   try {
-    const supabase = await createClient();
-
-    // Check for active subscription in the subscriptions table
+    // Check for active subscription
     const { data: subscriptions, error } = await supabase
       .from("subscriptions")
       .select("*")
@@ -223,15 +236,12 @@ export const checkUserSubscription = async (userId: string) => {
 
     if (error) {
       console.error("Error checking subscription:", error);
-      // Default to true if there's an error to prevent locking users out
-      return true;
+      return false;
     }
 
-    // Check if there are any active subscriptions in the array
     return Array.isArray(subscriptions) && subscriptions.length > 0;
   } catch (error) {
     console.error("Unexpected error in checkUserSubscription:", error);
-    // Default to true if there's an error to prevent locking users out
-    return true;
+    return false;
   }
-};
+}
