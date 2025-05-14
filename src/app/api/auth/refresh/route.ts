@@ -81,7 +81,11 @@ export async function GET(request: NextRequest) {
     if (userError || sessionError) {
       const error = userError || sessionError;
       // Don't treat this as an error if it's just an auth session missing error
-      if (error.message.includes("Auth session missing")) {
+      if (
+        error &&
+        error.message &&
+        error.message.includes("Auth session missing")
+      ) {
         return NextResponse.json(
           {
             success: false,
@@ -99,7 +103,7 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: "Failed to get user",
-          details: error.message,
+          details: error ? error.message : "Unknown error",
         },
         { status: 401 },
       );
