@@ -1,6 +1,40 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server-actions";
 import { NextRequest, NextResponse } from "next/server";
 
+interface SearchResults {
+  exactMatch?: {
+    data: any;
+    error: string | null;
+  };
+  ilikeMatch?: {
+    data: any;
+    error: string | null;
+  };
+  patternMatch?: {
+    data: any;
+    error: string | null;
+  };
+  usernameMatch?: {
+    data: any;
+    error: string | null;
+  };
+  rawSqlMatch?: {
+    data: any;
+    error: string | null;
+    note?: string;
+  };
+  allUsers?: {
+    data: any[];
+    error: string | null;
+    count: number;
+  };
+  rpcResults?: {
+    data: any;
+    error: string | null;
+    count: number;
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { email } = await request.json();
@@ -25,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Try multiple search strategies and return all results
-    const results = {};
+    const results: SearchResults = {};
 
     // Get ALL users without any filtering
     const { data: allUsersRaw, error: allUsersError } = await supabase
@@ -156,7 +190,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Try multiple search strategies and return all results
-    const results = {};
+    const results: SearchResults = {};
 
     // Get ALL users without any filtering - using direct SQL query to bypass any potential ORM issues
     const { data: allUsersRaw, error: allUsersError } = await supabase
