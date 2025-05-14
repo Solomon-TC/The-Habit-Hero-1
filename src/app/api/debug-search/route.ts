@@ -11,6 +11,13 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createServerSupabaseClient();
 
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Failed to initialize database client" },
+        { status: 500 },
+      );
+    }
+
     // Get current user for security check
     const { data: currentUser } = await supabase.auth.getUser();
     if (!currentUser.user) {
@@ -134,6 +141,14 @@ export async function GET(request: NextRequest) {
     const query = url.searchParams.get("query") || "";
 
     const supabase = await createServerSupabaseClient();
+
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Failed to initialize database client" },
+        { status: 500 },
+      );
+    }
+
     const { data: currentUser } = await supabase.auth.getUser();
 
     if (!currentUser.user) {
