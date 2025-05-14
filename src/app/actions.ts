@@ -23,7 +23,7 @@ export async function signInAction(formData: FormData) {
     return encodedRedirect("error", "Email and password are required");
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -63,7 +63,7 @@ export async function signUpAction(formData: FormData) {
     return encodedRedirect("error", "All fields are required");
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -132,7 +132,7 @@ export async function forgotPasswordAction(formData: FormData) {
     return encodedRedirect("error", "Email is required");
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -172,7 +172,7 @@ export async function resetPasswordAction(formData: FormData) {
     return encodedRedirect("error", "Password is required");
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -207,7 +207,7 @@ export async function resetPasswordAction(formData: FormData) {
 }
 
 export async function checkUserSubscription(userId: string) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
