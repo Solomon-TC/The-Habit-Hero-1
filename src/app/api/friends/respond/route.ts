@@ -56,11 +56,11 @@ export async function POST(request: NextRequest) {
       const { error: acceptError } = await supabase.from("friendships").insert([
         {
           user_id: currentUserId,
-          friend_id: request.sender_id,
+          friend_id: friendRequest.sender_id,
           created_at: new Date().toISOString(),
         },
         {
-          user_id: request.sender_id,
+          user_id: friendRequest.sender_id,
           friend_id: currentUserId,
           created_at: new Date().toISOString(),
         },
