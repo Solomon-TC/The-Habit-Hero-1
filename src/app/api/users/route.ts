@@ -38,7 +38,14 @@ export async function GET(request: NextRequest) {
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const isUuid = uuidRegex.test(query);
 
-      let users = [];
+      interface UserData {
+        id: string;
+        email: string | null;
+        name: string;
+        avatar_url: string | null;
+      }
+
+      let users: UserData[] = [];
 
       // First try to get users from auth.users table
       if (isUuid) {
