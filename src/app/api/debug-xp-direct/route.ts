@@ -64,12 +64,11 @@ export async function GET(request: NextRequest) {
     // Return detailed information about the XP award
     return NextResponse.json({
       originalUser: originalUserData || null,
-      updatedUser: updatedUser || result.data || null,
+      updatedUser: updatedUser || null,
       xpAdded: testXpAmount,
       leveledUp: result.leveledUp,
       oldLevel: result.oldLevel,
       newLevel: result.newLevel,
-      newXP: result.newXP,
       transactionResult: result,
       errors: {
         fetchError: fetchError?.message,
