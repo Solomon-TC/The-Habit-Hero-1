@@ -1,10 +1,17 @@
 import { createServerSupabaseClient } from "@/lib/supabase-server-actions";
 import { NextRequest, NextResponse } from "next/server";
-import { awardXP } from "@/lib/xp";
 
 export async function GET(request: NextRequest) {
   try {
+    // Create a server-side Supabase client
     const supabase = await createServerSupabaseClient();
+
+    if (!supabase) {
+      return NextResponse.json(
+        { error: "Failed to initialize database client" },
+        { status: 500 },
+      );
+    }
 
     // Get the current user
     const { data: currentUser } = await supabase.auth.getUser();
@@ -12,10 +19,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    // Get user data from the users table
+    // Get the user's XP and level
     const { data: userData, error: userError } = await supabase
       .from("users")
-      .select("*")
+      .select("xp, level")
       .eq("id", currentUser.user.id)
       .single();
 
@@ -23,47 +30,29 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: userError.message }, { status: 500 });
     }
 
-    // Get recent XP logs
+    // Get the user's XP logs
     const { data: xpLogs, error: logsError } = await supabase
       .from("xp_logs")
       .select("*")
       .eq("user_id", currentUser.user.id)
       .order("created_at", { ascending: false })
-      .limit(10);
+      .limit(50);
 
-    // Award test XP using the awardXP function
-    const testXpAmount = 5;
-    const xpResult = await awardXP(
-      currentUser.user.id,
-      testXpAmount,
-      "debug",
-      "test",
-    );
-
-    // Get the updated user data
-    const { data: updatedUser, error: updateError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("id", currentUser.user.id)
-      .single();
-
-    // XP logging is now handled by the awardXP function
-    const logError = xpResult.error;
+    if (logsError) {
+      return NextResponse.json({ error: logsError.message }, { status: 500 });
+    }
 
     return NextResponse.json({
-      user: userData,
-      xpLogs: xpLogs || [],
-      testXpAdded: testXpAmount,
-      updatedUser: updatedUser || null,
-      errors: {
-        userError: userError?.message,
-        logsError: logsError?.message,
-        updateError: updateError?.message,
-        logError: logError?.message,
+      user: {
+        id: currentUser.user.id,
+        xp: userData?.xp || 0,
+        level: userData?.level || 1,
       },
+      logs: xpLogs || [],
+      timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
-    console.error("Error in debug XP API:", error);
+    console.error("Error in debug-xp endpoint:", error);
     return NextResponse.json(
       { error: error.message || "An unexpected error occurred" },
       { status: 500 },
