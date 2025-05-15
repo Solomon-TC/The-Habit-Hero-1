@@ -37,10 +37,15 @@ export async function GET(request: NextRequest) {
       "test-direct",
     );
 
-    if (result.error) {
+    if ("error" in result && result.error) {
       console.error("Error awarding XP:", result.error);
       return NextResponse.json(
-        { error: result.error.message || "Error awarding XP" },
+        {
+          error:
+            typeof result.error === "string"
+              ? result.error
+              : "Error awarding XP",
+        },
         { status: 500 },
       );
     }
