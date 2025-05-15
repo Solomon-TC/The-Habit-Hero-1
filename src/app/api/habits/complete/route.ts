@@ -121,14 +121,16 @@ export async function POST(request: NextRequest) {
     }
 
     const xpResult = await awardXP(userId, xpValue, "habit", habitId);
-    console.log("XP award result:", xpResult);
 
     if ("error" in xpResult && xpResult.error) {
       console.error("Error awarding XP:", xpResult.error);
       return NextResponse.json({
         success: true, // Still mark as success since the habit was completed
         logData,
-        error: `Habit completed but XP not awarded: ${xpResult.error}`,
+        error:
+          typeof xpResult.error === "string"
+            ? xpResult.error
+            : "Error awarding XP",
         xpGained: 0,
       });
     }

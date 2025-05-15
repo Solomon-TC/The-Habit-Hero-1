@@ -69,6 +69,24 @@ export function calculateLevelFromXP(totalXP: number): number {
   return level;
 }
 
+interface XPResult {
+  success?: boolean;
+  updatedUser?: {
+    id: string;
+    xp: number;
+    level: number;
+  };
+  xpAwarded?: number;
+  reason?: string;
+  sourceId?: string;
+  newXP?: number;
+  oldXP?: number;
+  newLevel?: number;
+  oldLevel?: number;
+  leveledUp?: boolean;
+  error?: string;
+}
+
 /**
  * Award XP to a user
  * @param userId The user's ID
@@ -82,7 +100,7 @@ export async function awardXP(
   amount: number,
   reason: string,
   sourceId?: string,
-) {
+): Promise<XPResult> {
   try {
     const supabase = createServiceRoleClient();
     if (!supabase) {
@@ -118,7 +136,68 @@ export async function awardXP(
           return { error: createError.message };
         }
 
-        userData = newUser;
+        // If we successfully created the user, use that data
+        if (newUser) {
+          // Calculate the new XP and level
+          const oldXP = 0;
+          const oldLevel = 1;
+          const newXP = amount;
+
+          // Calculate the new level based on the new XP
+          const newLevel = calculateLevelFromXP(newXP);
+          const leveledUp = newLevel > oldLevel;
+
+          // Update the user's XP and level
+          const { error: updateError } = await supabase
+            .from("users")
+            .update({
+              xp: newXP,
+              level: newLevel,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", userId);
+
+          if (updateError) {
+            console.error("Error updating user XP:", updateError);
+            return { error: updateError.message };
+          }
+
+          // Log the XP award
+          const { error: logError } = await supabase.from("xp_logs").insert({
+            user_id: userId,
+            amount,
+            reason: reason || "general", // Ensure reason has a default value
+            source_id: sourceId,
+            source: sourceId ? "external" : "system", // Provide a default value for source
+            level_before: oldLevel,
+            level_after: newLevel,
+            created_at: new Date().toISOString(),
+          });
+
+          if (logError) {
+            console.error("Error logging XP award:", logError);
+            // Continue anyway since the XP was awarded successfully
+          }
+
+          return {
+            success: true,
+            updatedUser: {
+              id: userId,
+              xp: newXP,
+              level: newLevel,
+            },
+            xpAwarded: amount,
+            reason,
+            sourceId,
+            newXP,
+            oldXP,
+            newLevel,
+            oldLevel,
+            leveledUp,
+          };
+        } else {
+          return { error: "User not found and could not be created" };
+        }
       } else {
         console.error("Error fetching user data:", userError);
         return { error: userError.message };

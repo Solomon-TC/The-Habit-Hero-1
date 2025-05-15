@@ -22,7 +22,15 @@ export async function POST(request: NextRequest) {
 
     if ("error" in result && result.error) {
       console.error(`[API] Error updating goal progress:`, result.error);
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return NextResponse.json(
+        {
+          error:
+            typeof result.error === "string"
+              ? result.error
+              : "Error updating goal progress",
+        },
+        { status: 500 },
+      );
     }
 
     console.log(`[API] Goal progress updated successfully:`, result);

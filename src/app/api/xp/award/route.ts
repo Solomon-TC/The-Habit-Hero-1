@@ -53,7 +53,15 @@ export async function POST(request: NextRequest) {
     const result = await awardXP(userId, amount, reason, sourceId);
 
     if ("error" in result && result.error) {
-      return NextResponse.json({ error: result.error }, { status: 500 });
+      return NextResponse.json(
+        {
+          error:
+            typeof result.error === "string"
+              ? result.error
+              : "Error awarding XP",
+        },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json(result);

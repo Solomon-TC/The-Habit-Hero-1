@@ -9,94 +9,109 @@ export const createServerSupabaseClient = async () => {
 
   // Only import cookies on the server side
   if (typeof window === "undefined") {
-    // Dynamic import to avoid client-side import of next/headers
-    const { cookies } = await import("next/headers");
-    // Store cookies() in a variable and await it before using
-    cookieStore = await cookies();
+    try {
+      // Dynamic import to avoid client-side import of next/headers
+      const { cookies } = await import("next/headers");
+      // Store cookies() in a variable and await it before using
+      cookieStore = await cookies();
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error("Missing Supabase environment variables");
-      throw new Error("Missing required environment variables for Supabase");
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.error("Missing Supabase environment variables");
+        return null;
+      }
+
+      return createServerClient(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+          async get(name: string) {
+            // Ensure we're using the cookie store correctly
+            const cookie = await cookieStore.get(name);
+            return cookie?.value;
+          },
+          async set(name: string, value: string, options: any) {
+            cookieStore.set({ name, value, ...options });
+          },
+          async remove(name: string, options: any) {
+            cookieStore.set({ name, value: "", ...options });
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error creating server Supabase client:", error);
+      return null;
     }
-
-    return createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        async get(name: string) {
-          // Ensure we're using the cookie store correctly
-          const cookie = await cookieStore.get(name);
-          return cookie?.value;
-        },
-        async set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options });
-        },
-        async remove(name: string, options: any) {
-          cookieStore.set({ name, value: "", ...options });
-        },
-      },
-    });
   } else {
     // Client-side implementation
     console.warn(
       "createServerSupabaseClient is being used on the client side. This is not recommended.",
     );
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error("Missing Supabase environment variables");
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.error("Missing Supabase environment variables");
+        return null;
+      }
+
+      return createServerClient(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+          get(name: string) {
+            const cookies = document.cookie.split("; ");
+            const cookie = cookies.find((c) => c.startsWith(`${name}=`));
+            return cookie ? cookie.split("=")[1] : undefined;
+          },
+          set(name: string, value: string, options: any) {
+            let cookie = `${name}=${value}`;
+            if (options.expires) {
+              cookie += `; expires=${options.expires.toUTCString()}`;
+            }
+            if (options.path) {
+              cookie += `; path=${options.path}`;
+            }
+            if (options.domain) {
+              cookie += `; domain=${options.domain}`;
+            }
+            if (options.secure) {
+              cookie += `; secure`;
+            }
+            document.cookie = cookie;
+          },
+          remove(name: string, options: any) {
+            this.set(name, "", { ...options, expires: new Date(0) });
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error creating client-side Supabase client:", error);
       return null;
     }
-
-    return createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        get(name: string) {
-          const cookies = document.cookie.split("; ");
-          const cookie = cookies.find((c) => c.startsWith(`${name}=`));
-          return cookie ? cookie.split("=")[1] : undefined;
-        },
-        set(name: string, value: string, options: any) {
-          let cookie = `${name}=${value}`;
-          if (options.expires) {
-            cookie += `; expires=${options.expires.toUTCString()}`;
-          }
-          if (options.path) {
-            cookie += `; path=${options.path}`;
-          }
-          if (options.domain) {
-            cookie += `; domain=${options.domain}`;
-          }
-          if (options.secure) {
-            cookie += `; secure`;
-          }
-          document.cookie = cookie;
-        },
-        remove(name: string, options: any) {
-          this.set(name, "", { ...options, expires: new Date(0) });
-        },
-      },
-    });
   }
 };
 
 // Create a service role client that bypasses RLS
 export const createServiceRoleClient = () => {
-  const supabaseUrl =
-    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+  try {
+    const supabaseUrl =
+      process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-  if (!supabaseUrl || !supabaseServiceKey) {
-    console.error("Missing Supabase service role environment variables");
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing Supabase service role environment variables");
+      return null;
+    }
+
+    return createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating service role client:", error);
     return null;
   }
-
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
 };
