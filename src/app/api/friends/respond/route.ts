@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const currentUserId = sessionData.session.user.id;
 
     // Get the friend request
-    const { data: request, error: requestError } = await supabase
+    const { data: friendRequest, error: requestError } = await supabase
       .from("friend_requests")
       .select("*")
       .eq("id", requestId)
