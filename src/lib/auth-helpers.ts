@@ -1,14 +1,10 @@
 import { createBrowserClient } from "@supabase/ssr";
 
-/**
- * Comprehensive session refresh utility that tries multiple methods to ensure a valid session
- * @returns Object containing session data, user data, and success status
- */
-export async function refreshSessionComprehensive() {
-  // Use the singleton client to maintain consistent session state
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+// Create a reusable function for Supabase client initialization
+const createSupabaseClient = () => {
+  return createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
     {
       options: {
         persistSession: true,
@@ -24,6 +20,15 @@ export async function refreshSessionComprehensive() {
       },
     },
   );
+};
+
+/**
+ * Comprehensive session refresh utility that tries multiple methods to ensure a valid session
+ * @returns Object containing session data, user data, and success status
+ */
+export async function refreshSessionComprehensive() {
+  // Use the singleton client to maintain consistent session state
+  const supabase = createSupabaseClient();
   let sessionData = null;
   let userData = null;
   let success = false;
@@ -133,16 +138,7 @@ export async function refreshSessionComprehensive() {
  */
 export async function checkAuthentication() {
   // First try to get the session directly - this is faster and more reliable
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      options: {
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-    },
-  );
+  const supabase = createSupabaseClient();
 
   try {
     // Try to get the session directly first

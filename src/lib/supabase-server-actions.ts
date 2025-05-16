@@ -96,8 +96,8 @@ export const createServerSupabaseClient = async () => {
 export const createServiceRoleClient = () => {
   try {
     const supabaseUrl =
-      process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+      process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY || "";
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Missing Supabase service role environment variables");

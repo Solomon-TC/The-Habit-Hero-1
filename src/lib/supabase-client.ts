@@ -50,8 +50,8 @@ export function getSupabaseClient() {
       console.error("Error initializing Supabase client:", error);
       // Return a new instance as fallback with the same persistence options
       return createBrowserClient<Database>(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
         {
           options: {
             persistSession: true,

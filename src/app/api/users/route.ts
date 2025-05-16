@@ -34,8 +34,9 @@ export async function GET(request: NextRequest) {
 
     // Create a client with service role key for maximum access
     const serviceClient = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+      process.env.SUPABASE_SERVICE_KEY || "",
+
       {
         cookies: {
           get(name: string) {

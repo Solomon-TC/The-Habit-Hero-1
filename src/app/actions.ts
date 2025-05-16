@@ -14,19 +14,12 @@ function encodedRedirect(
   return redirect(`${redirectTo || ""}?${searchParams.toString()}`);
 }
 
-export async function signInAction(formData: FormData) {
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const redirectTo = formData.get("redirectTo") as string;
-
-  if (!email || !password) {
-    return encodedRedirect("error", "Email and password are required");
-  }
-
+// Create a reusable function for Supabase client initialization
+const createSupabaseClient = async () => {
   const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
     {
       cookies: {
         get(name) {
@@ -41,6 +34,18 @@ export async function signInAction(formData: FormData) {
       },
     },
   );
+};
+
+export async function signInAction(formData: FormData) {
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const redirectTo = formData.get("redirectTo") as string;
+
+  if (!email || !password) {
+    return encodedRedirect("error", "Email and password are required");
+  }
+
+  const supabase = await createSupabaseClient();
 
   const { error } = await supabase.auth.signInWithPassword({
     email,
@@ -63,24 +68,7 @@ export async function signUpAction(formData: FormData) {
     return encodedRedirect("error", "All fields are required");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name, value, options) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name, options) {
-          cookieStore.set({ name, value: "", ...options });
-        },
-      },
-    },
-  );
+  const supabase = await createSupabaseClient();
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -132,24 +120,7 @@ export async function forgotPasswordAction(formData: FormData) {
     return encodedRedirect("error", "Email is required");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name, value, options) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name, options) {
-          cookieStore.set({ name, value: "", ...options });
-        },
-      },
-    },
-  );
+  const supabase = await createSupabaseClient();
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
@@ -172,24 +143,7 @@ export async function resetPasswordAction(formData: FormData) {
     return encodedRedirect("error", "Password is required");
   }
 
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name, value, options) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name, options) {
-          cookieStore.set({ name, value: "", ...options });
-        },
-      },
-    },
-  );
+  const supabase = await createSupabaseClient();
 
   const { error } = await supabase.auth.updateUser({
     password,
@@ -207,24 +161,7 @@ export async function resetPasswordAction(formData: FormData) {
 }
 
 export async function checkUserSubscription(userId: string) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name, value, options) {
-          cookieStore.set({ name, value, ...options });
-        },
-        remove(name, options) {
-          cookieStore.set({ name, value: "", ...options });
-        },
-      },
-    },
-  );
+  const supabase = await createSupabaseClient();
 
   try {
     // Check for active subscription
