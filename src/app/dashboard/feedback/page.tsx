@@ -30,7 +30,7 @@ export default async function FeedbackPage() {
   }
 
   // Fetch initial feedback data for server-side rendering
-  const { data: feedbackData } = await supabase
+  const { data: feedbackDataRaw } = await supabase
     .from("feedback")
     .select(
       `
@@ -46,6 +46,25 @@ export default async function FeedbackPage() {
     )
     .order("upvotes", { ascending: false })
     .order("created_at", { ascending: false });
+
+  // Transform the data to match the expected Feedback type
+  const feedbackData = feedbackDataRaw?.map((item) => ({
+    id: item.id,
+    title: item.title,
+    feedback_type: item.feedback_type,
+    content: item.content,
+    upvotes: item.upvotes,
+    created_at: item.created_at,
+    user_id: item.user_id,
+    users:
+      item.users && Array.isArray(item.users)
+        ? item.users[0]
+        : {
+            name: item.users?.name,
+            display_name: item.users?.display_name,
+            avatar_url: item.users?.avatar_url,
+          },
+  }));
 
   // Fetch user's upvotes
   const { data: userUpvotesData } = await supabase
