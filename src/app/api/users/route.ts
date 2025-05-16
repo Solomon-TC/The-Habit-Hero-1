@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
           users = [
             {
               id: authUser.user.id,
-              email: authUser.user.email,
+              email: authUser.user.email || null,
               name: authUser.user.email?.split("@")[0] || "User",
               avatar_url: null,
             },
@@ -75,7 +75,7 @@ export async function GET(request: NextRequest) {
             );
             users = matchingUsers.map((user) => ({
               id: user.id,
-              email: user.email,
+              email: user.email || null,
               name: user.email?.split("@")[0] || "User",
               avatar_url: null,
             }));
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
       id: user.id,
       name:
         user.name || user.display_name || user.email?.split("@")[0] || "User",
-      email: user.email || "",
+      email: user.email || null,
       avatar_url: user.avatar_url,
     }));
 
