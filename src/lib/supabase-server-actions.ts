@@ -42,7 +42,7 @@ export const createServerSupabaseClient = async () => {
               console.error("Error setting cookie:", error);
             }
           },
-          async remove(name: string, options: any) {
+          remove(name: string, options: any) {
             try {
               cookieStore.set({ name, value: "", ...options });
             } catch (error) {

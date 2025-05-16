@@ -5,8 +5,8 @@ import { cookies } from "next/headers";
 // GET /api/auth/refresh - Endpoint to refresh the auth session
 export async function GET(request: NextRequest) {
   try {
-    // Await cookies() before using it
-    const cookieStore = await cookies();
+    // Get cookies
+    const cookieStore = cookies();
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || "",

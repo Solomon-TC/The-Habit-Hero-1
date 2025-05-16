@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 
 export async function createServerSupabaseClient() {
   try {
-    const cookieStore = await cookies();
+    const cookieStore = cookies();
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -16,25 +16,25 @@ export async function createServerSupabaseClient() {
 
     return createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
-        async get(name) {
+        get(name) {
           try {
-            const cookie = await cookieStore.get(name);
+            const cookie = cookieStore.get(name);
             return cookie?.value;
           } catch (error) {
             console.error("Error getting cookie:", error);
             return undefined;
           }
         },
-        async set(name, value, options) {
+        set(name, value, options) {
           try {
-            await cookieStore.set({ name, value, ...options });
+            cookieStore.set({ name, value, ...options });
           } catch (error) {
             console.error("Error setting cookie:", error);
           }
         },
-        async remove(name, options) {
+        remove(name, options) {
           try {
-            await cookieStore.set({ name, value: "", ...options });
+            cookieStore.set({ name, value: "", ...options });
           } catch (error) {
             console.error("Error removing cookie:", error);
           }

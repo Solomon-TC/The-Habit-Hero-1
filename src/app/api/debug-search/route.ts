@@ -74,7 +74,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Found ${allUsersRaw?.length || 0} total users in database`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`Found ${allUsersRaw?.length || 0} total users in database`);
+    }
 
     // 1. Exact match with eq
     const { data: exactMatch, error: exactError } = await supabase
@@ -206,22 +208,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`Found ${allUsersRaw?.length || 0} total users in database`);
-    console.log(
-      "All user emails:",
-      allUsersRaw?.map((user) => user.email),
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`Found ${allUsersRaw?.length || 0} total users in database`);
+      console.log(
+        "All user emails:",
+        allUsersRaw?.map((user) => user.email),
+      );
+    }
 
     // Check if the specific email we're looking for exists
     const specificEmail = "solomoncapellspam@gmail.com";
     const specificUser = allUsersRaw.find(
       (user) => user.email === specificEmail,
     );
-    console.log(
-      `Specific user '${specificEmail}' exists:`,
-      !!specificUser,
-      specificUser || "Not found",
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `Specific user '${specificEmail}' exists:`,
+        !!specificUser,
+        specificUser || "Not found",
+      );
+    }
 
     // Filter out current user for search results
     const filteredUsers = allUsersRaw.filter(

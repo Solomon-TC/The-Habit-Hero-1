@@ -135,9 +135,11 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log(
-      `XP awarded successfully: ${xpValue}, Level up: ${xpResult.leveledUp}`,
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        `XP awarded successfully: ${xpValue}, Level up: ${xpResult.leveledUp}`,
+      );
+    }
 
     return NextResponse.json({
       success: true,

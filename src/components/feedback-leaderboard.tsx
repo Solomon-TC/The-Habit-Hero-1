@@ -12,7 +12,7 @@ type FeedbackUser = {
   avatar_url: string | null;
 };
 
-type Feedback = {
+export interface Feedback {
   id: string;
   title: string;
   feedback_type: string;
@@ -21,7 +21,7 @@ type Feedback = {
   created_at: string;
   user_id: string;
   users: FeedbackUser;
-};
+}
 
 interface FeedbackLeaderboardProps {
   initialFeedback?: Feedback[];

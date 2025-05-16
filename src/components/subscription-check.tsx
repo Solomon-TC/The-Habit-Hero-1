@@ -16,7 +16,7 @@ export async function SubscriptionCheck({
   if (!supabase) {
     // If we can't create a client, allow access rather than blocking users
     console.error("Failed to create Supabase client in SubscriptionCheck");
-    return <>{children}</>;
+    return <div className="w-full">{children}</div>;
   }
 
   const {
@@ -40,18 +40,18 @@ export async function SubscriptionCheck({
     if (error) {
       console.error("Error checking subscription:", error);
       // Continue showing content if there's an error checking subscription
-      return <>{children}</>;
+      return <div className="w-full">{children}</div>;
     }
 
     // If any active subscription is found, user has access
     if (Array.isArray(subscriptions) && subscriptions.length > 0) {
-      return <>{children}</>;
+      return <div className="w-full">{children}</div>;
     }
 
     // Fallback to the original check in case the direct check failed
     const isSubscribed = await checkUserSubscription(user.id);
     if (isSubscribed) {
-      return <>{children}</>;
+      return <div className="w-full">{children}</div>;
     }
 
     // If no active subscription is found, redirect to pricing page
@@ -60,6 +60,6 @@ export async function SubscriptionCheck({
   } catch (error) {
     console.error("Unexpected error in SubscriptionCheck:", error);
     // On error, allow access to prevent locking users out
-    return <>{children}</>;
+    return <div className="w-full">{children}</div>;
   }
 }

@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const query = url.searchParams.get("query");
 
-    // Await cookies() before using it
-    const cookieStore = await cookies();
+    // Get cookies
+    const cookieStore = cookies();
 
     // Create a client with service role key for maximum access
     const serviceClient = createServerClient(

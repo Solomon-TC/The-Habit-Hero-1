@@ -97,8 +97,12 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
 
       // Log the authentication state for debugging
       console.log(
-        `Auth state updated: authenticated=${authStatus}, userId=${userData?.user?.id || "none"}`,
+        `Auth state updated: authenticated=${authStatus}, userId=${userData?.id || "none"}`,
       );
+      } catch (authError) {
+        console.error("Error checking authentication:", authError);
+        return false;
+      }
 
       // Only show errors if we're not authenticated and have actual errors
       // This prevents showing errors during background refreshes

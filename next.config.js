@@ -4,6 +4,7 @@ const nextConfig = {
   // Optimize build output
   distDir: ".next",
   output: "standalone",
+  poweredByHeader: false,
   pageExtensions: ["tsx", "ts", "jsx", "js", "md", "mdx"],
   images: {
     remotePatterns: [
