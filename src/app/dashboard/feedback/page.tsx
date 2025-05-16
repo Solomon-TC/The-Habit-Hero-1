@@ -48,23 +48,42 @@ export default async function FeedbackPage() {
     .order("created_at", { ascending: false });
 
   // Transform the data to match the expected Feedback type
-  const feedbackData = feedbackDataRaw?.map((item) => ({
-    id: item.id,
-    title: item.title,
-    feedback_type: item.feedback_type,
-    content: item.content,
-    upvotes: item.upvotes,
-    created_at: item.created_at,
-    user_id: item.user_id,
-    users:
-      item.users && Array.isArray(item.users)
-        ? item.users[0]
-        : {
-            name: item.users?.name,
-            display_name: item.users?.display_name,
-            avatar_url: item.users?.avatar_url,
-          },
-  }));
+  const feedbackData = feedbackDataRaw?.map((item) => {
+    // Handle users data safely
+    let userData = {
+      name: null,
+      display_name: null,
+      avatar_url: null,
+    };
+
+    if (item.users) {
+      if (Array.isArray(item.users) && item.users.length > 0) {
+        userData = {
+          name: item.users[0].name || null,
+          display_name: item.users[0].display_name || null,
+          avatar_url: item.users[0].avatar_url || null,
+        };
+      } else if (typeof item.users === "object") {
+        const usersObj = item.users as Record<string, any>;
+        userData = {
+          name: usersObj.name || null,
+          display_name: usersObj.display_name || null,
+          avatar_url: usersObj.avatar_url || null,
+        };
+      }
+    }
+
+    return {
+      id: item.id,
+      title: item.title,
+      feedback_type: item.feedback_type,
+      content: item.content,
+      upvotes: item.upvotes,
+      created_at: item.created_at,
+      user_id: item.user_id,
+      users: userData,
+    };
+  });
 
   // Fetch user's upvotes
   const { data: userUpvotesData } = await supabase

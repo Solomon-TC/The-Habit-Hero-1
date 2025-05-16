@@ -5,24 +5,42 @@ import { createServerClient } from "@supabase/ssr";
 export async function createServerSupabaseClient() {
   try {
     const cookieStore = await cookies();
-    return createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          async get(name) {
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("Missing Supabase environment variables");
+      return null;
+    }
+
+    return createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        async get(name) {
+          try {
             const cookie = await cookieStore.get(name);
             return cookie?.value;
-          },
-          async set(name, value, options) {
+          } catch (error) {
+            console.error("Error getting cookie:", error);
+            return undefined;
+          }
+        },
+        async set(name, value, options) {
+          try {
             await cookieStore.set({ name, value, ...options });
-          },
-          async remove(name, options) {
+          } catch (error) {
+            console.error("Error setting cookie:", error);
+          }
+        },
+        async remove(name, options) {
+          try {
             await cookieStore.set({ name, value: "", ...options });
-          },
+          } catch (error) {
+            console.error("Error removing cookie:", error);
+          }
         },
       },
-    );
+    });
   } catch (error) {
     console.error("Error creating server Supabase client:", error);
     return null;
@@ -36,17 +54,18 @@ export function createServiceRoleClient() {
   }
 
   try {
-    return createSupabaseClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-      process.env.SUPABASE_SERVICE_KEY || "",
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) {
+      console.error("NEXT_PUBLIC_SUPABASE_URL is not defined");
+      return null;
+    }
 
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
+    return createSupabaseClient(supabaseUrl, process.env.SUPABASE_SERVICE_KEY, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
       },
-    );
+    });
   } catch (error) {
     console.error("Error creating service role client:", error);
     return null;

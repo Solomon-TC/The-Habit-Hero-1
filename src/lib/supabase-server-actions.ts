@@ -26,15 +26,28 @@ export const createServerSupabaseClient = async () => {
       return createServerClient(supabaseUrl, supabaseAnonKey, {
         cookies: {
           async get(name: string) {
-            // Ensure we're using the cookie store correctly
-            const cookie = await cookieStore.get(name);
-            return cookie?.value;
+            try {
+              // Ensure we're using the cookie store correctly
+              const cookie = await cookieStore.get(name);
+              return cookie?.value;
+            } catch (error) {
+              console.error("Error getting cookie:", error);
+              return undefined;
+            }
           },
           async set(name: string, value: string, options: any) {
-            cookieStore.set({ name, value, ...options });
+            try {
+              cookieStore.set({ name, value, ...options });
+            } catch (error) {
+              console.error("Error setting cookie:", error);
+            }
           },
           async remove(name: string, options: any) {
-            cookieStore.set({ name, value: "", ...options });
+            try {
+              cookieStore.set({ name, value: "", ...options });
+            } catch (error) {
+              console.error("Error removing cookie:", error);
+            }
           },
         },
       });
@@ -60,28 +73,41 @@ export const createServerSupabaseClient = async () => {
       return createServerClient(supabaseUrl, supabaseAnonKey, {
         cookies: {
           get(name: string) {
-            const cookies = document.cookie.split("; ");
-            const cookie = cookies.find((c) => c.startsWith(`${name}=`));
-            return cookie ? cookie.split("=")[1] : undefined;
+            try {
+              const cookies = document.cookie.split("; ");
+              const cookie = cookies.find((c) => c.startsWith(`${name}=`));
+              return cookie ? cookie.split("=")[1] : undefined;
+            } catch (error) {
+              console.error("Error getting cookie:", error);
+              return undefined;
+            }
           },
           set(name: string, value: string, options: any) {
-            let cookie = `${name}=${value}`;
-            if (options.expires) {
-              cookie += `; expires=${options.expires.toUTCString()}`;
+            try {
+              let cookie = `${name}=${value}`;
+              if (options.expires) {
+                cookie += `; expires=${options.expires.toUTCString()}`;
+              }
+              if (options.path) {
+                cookie += `; path=${options.path}`;
+              }
+              if (options.domain) {
+                cookie += `; domain=${options.domain}`;
+              }
+              if (options.secure) {
+                cookie += `; secure`;
+              }
+              document.cookie = cookie;
+            } catch (error) {
+              console.error("Error setting cookie:", error);
             }
-            if (options.path) {
-              cookie += `; path=${options.path}`;
-            }
-            if (options.domain) {
-              cookie += `; domain=${options.domain}`;
-            }
-            if (options.secure) {
-              cookie += `; secure`;
-            }
-            document.cookie = cookie;
           },
           remove(name: string, options: any) {
-            this.set(name, "", { ...options, expires: new Date(0) });
+            try {
+              this.set(name, "", { ...options, expires: new Date(0) });
+            } catch (error) {
+              console.error("Error removing cookie:", error);
+            }
           },
         },
       });

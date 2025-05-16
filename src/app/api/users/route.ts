@@ -20,7 +20,7 @@ interface PublicUserData {
 
 interface AuthUser {
   id: string;
-  email: string | null;
+  email?: string | null; // Make email optional to match potential null values
   [key: string]: any; // For other properties that might be in auth user
 }
 
@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
           if (authUsers?.users) {
             const matchingUsers = authUsers.users.filter(
               (user) =>
-                user.email &&
+                user.email != null &&
                 user.email.toLowerCase().includes(query.toLowerCase()),
             );
             users = matchingUsers.map((user) => ({
