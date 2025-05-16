@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
             await serviceClient.auth.admin.listUsers();
           if (authUsers?.users) {
             const matchingUsers = authUsers.users.filter(
-              (user: AuthUser) =>
+              (user) =>
                 user.email &&
                 user.email.toLowerCase().includes(query.toLowerCase()),
             );
