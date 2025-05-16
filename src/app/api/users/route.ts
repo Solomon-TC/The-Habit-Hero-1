@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
                 user.display_name ||
                 user.email?.split("@")[0] ||
                 "User",
-              email: user.email || "",
+              email: user.email || null,
               avatar_url: user.avatar_url,
             });
             existingIds.add(user.id);
