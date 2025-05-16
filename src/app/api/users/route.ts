@@ -136,13 +136,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: publicError.message }, { status: 500 });
     }
 
+    interface PublicUserData {
+      id: string;
+      name?: string | null;
+      email?: string | null;
+      avatar_url?: string | null;
+      display_name?: string | null;
+    }
+
     // Transform the data
-    const users = publicUsers.map((user) => ({
+    const users = publicUsers.map((user: PublicUserData) => ({
       id: user.id,
       name:
         user.name || user.display_name || user.email?.split("@")[0] || "User",
       email: user.email || null,
-      avatar_url: user.avatar_url,
+      avatar_url: user.avatar_url || null,
     }));
 
     console.log(`API found ${users.length} total users`);
