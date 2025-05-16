@@ -17,6 +17,10 @@ import { FeedbackLeaderboard } from "@/components/feedback-leaderboard";
 export default async function FeedbackPage() {
   const supabase = await createServerSupabaseClient();
 
+  if (!supabase) {
+    return redirect("/sign-in?error=Failed+to+initialize+database+client");
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
