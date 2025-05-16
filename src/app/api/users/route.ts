@@ -2,6 +2,28 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 
+// Define interfaces for user data structures
+interface UserData {
+  id: string;
+  email: string | null;
+  name: string;
+  avatar_url: string | null;
+}
+
+interface PublicUserData {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  avatar_url?: string | null;
+  display_name?: string | null;
+}
+
+interface AuthUser {
+  id: string;
+  email: string | null;
+  [key: string]: any; // For other properties that might be in auth user
+}
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
@@ -16,13 +38,13 @@ export async function GET(request: NextRequest) {
       process.env.SUPABASE_SERVICE_KEY!,
       {
         cookies: {
-          get(name) {
+          get(name: string) {
             return cookieStore.get(name)?.value;
           },
-          set(name, value, options) {
+          set(name: string, value: string, options: any) {
             cookieStore.set({ name, value, ...options });
           },
-          remove(name, options) {
+          remove(name: string, options: any) {
             cookieStore.set({ name, value: "", ...options });
           },
         },
@@ -37,13 +59,6 @@ export async function GET(request: NextRequest) {
       const uuidRegex =
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       const isUuid = uuidRegex.test(query);
-
-      interface UserData {
-        id: string;
-        email: string | null;
-        name: string;
-        avatar_url: string | null;
-      }
 
       let users: UserData[] = [];
 
@@ -69,11 +84,11 @@ export async function GET(request: NextRequest) {
             await serviceClient.auth.admin.listUsers();
           if (authUsers?.users) {
             const matchingUsers = authUsers.users.filter(
-              (user) =>
+              (user: AuthUser) =>
                 user.email &&
                 user.email.toLowerCase().includes(query.toLowerCase()),
             );
-            users = matchingUsers.map((user) => ({
+            users = matchingUsers.map((user: AuthUser) => ({
               id: user.id,
               email: user.email || null,
               name: user.email?.split("@")[0] || "User",
@@ -101,17 +116,17 @@ export async function GET(request: NextRequest) {
       } else if (publicUsers && publicUsers.length > 0) {
         // Add any users from public.users that aren't already in the list
         const existingIds = new Set(users.map((u) => u.id));
-        publicUsers.forEach((user) => {
+        publicUsers.forEach((user: PublicUserData) => {
           if (!existingIds.has(user.id)) {
             users.push({
               id: user.id,
               name:
                 user.name ||
                 user.display_name ||
-                user.email?.split("@")[0] ||
+                (user.email ? user.email.split("@")[0] : null) ||
                 "User",
               email: user.email || null,
-              avatar_url: user.avatar_url,
+              avatar_url: user.avatar_url || null,
             });
             existingIds.add(user.id);
           }
@@ -136,19 +151,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: publicError.message }, { status: 500 });
     }
 
-    interface PublicUserData {
-      id: string;
-      name?: string | null;
-      email?: string | null;
-      avatar_url?: string | null;
-      display_name?: string | null;
-    }
-
     // Transform the data
     const users = publicUsers.map((user: PublicUserData) => ({
       id: user.id,
       name:
-        user.name || user.display_name || user.email?.split("@")[0] || "User",
+        user.name ||
+        user.display_name ||
+        (user.email ? user.email.split("@")[0] : null) ||
+        "User",
       email: user.email || null,
       avatar_url: user.avatar_url || null,
     }));
