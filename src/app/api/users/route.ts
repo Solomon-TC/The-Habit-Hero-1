@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
                 user.email &&
                 user.email.toLowerCase().includes(query.toLowerCase()),
             );
-            users = matchingUsers.map((user: AuthUser) => ({
+            users = matchingUsers.map((user) => ({
               id: user.id,
               email: user.email || null,
               name: user.email?.split("@")[0] || "User",
