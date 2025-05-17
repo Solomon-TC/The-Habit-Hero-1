@@ -16,30 +16,31 @@ function encodedRedirect(
 
 // Create a reusable function for Supabase client initialization
 const createSupabaseClient = async () => {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || "",
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
     {
       cookies: {
-        get(name) {
+        async get(name) {
           try {
-            return cookieStore.get(name)?.value;
+            const cookie = await cookieStore.get(name);
+            return cookie?.value;
           } catch (error) {
             console.error("Error getting cookie:", error);
             return undefined;
           }
         },
-        set(name, value, options) {
+        async set(name, value, options) {
           try {
-            cookieStore.set({ name, value, ...options });
+            await cookieStore.set({ name, value, ...options });
           } catch (error) {
             console.error("Error setting cookie:", error);
           }
         },
-        remove(name, options) {
+        async remove(name, options) {
           try {
-            cookieStore.set({ name, value: "", ...options });
+            await cookieStore.set({ name, value: "", ...options });
           } catch (error) {
             console.error("Error removing cookie:", error);
           }
