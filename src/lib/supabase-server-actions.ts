@@ -37,14 +37,14 @@ export const createServerSupabaseClient = async () => {
           },
           async set(name: string, value: string, options: any) {
             try {
-              cookieStore.set({ name, value, ...options });
+              await cookieStore.set({ name, value, ...options });
             } catch (error) {
               console.error("Error setting cookie:", error);
             }
           },
-          remove(name: string, options: any) {
+          async remove(name: string, options: any) {
             try {
-              cookieStore.set({ name, value: "", ...options });
+              await cookieStore.set({ name, value: "", ...options });
             } catch (error) {
               console.error("Error removing cookie:", error);
             }

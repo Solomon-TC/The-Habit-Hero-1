@@ -99,10 +99,6 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       console.log(
         `Auth state updated: authenticated=${authStatus}, userId=${userData?.id || "none"}`,
       );
-      } catch (authError) {
-        console.error("Error checking authentication:", authError);
-        return false;
-      }
 
       // Only show errors if we're not authenticated and have actual errors
       // This prevents showing errors during background refreshes
@@ -122,15 +118,15 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       }
 
       return authStatus;
-    } catch (err) {
-      console.error("Error refreshing session:", err);
+    } catch (error) {
+      // Handle all errors in a single catch block
+      console.error("Error in refreshSession:", error);
 
-      // Only show errors and reset state for critical failures
-      // For transient errors, maintain the current state
+      // Check if this is a critical error that requires resetting state
       if (
         !isAuthenticated ||
-        err.toString().includes("fatal") ||
-        err.toString().includes("expired")
+        error.toString().includes("fatal") ||
+        error.toString().includes("expired")
       ) {
         setError("An unexpected error occurred");
         setIsAuthenticated(false);
