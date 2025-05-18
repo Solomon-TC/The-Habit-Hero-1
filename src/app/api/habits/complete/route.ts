@@ -117,7 +117,9 @@ export async function POST(request: NextRequest) {
         console.log(`Creating new user record for ${userId}`);
       }
     } catch (err) {
-      console.log(`Error checking user existence: ${err}`);
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`Error checking user existence: ${err}`);
+      }
     }
 
     const xpResult = await awardXP(userId, xpValue, "habit", habitId);

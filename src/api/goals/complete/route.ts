@@ -33,7 +33,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[API] Goal progress updated successfully:`, result);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[API] Goal progress updated successfully:`, result);
+    }
     return NextResponse.json(result);
   } catch (error) {
     console.error(`[API] Unexpected error in goal complete API:`, error);

@@ -8,6 +8,18 @@ export async function POST(request: NextRequest) {
     const pathParts = url.pathname.split("/");
     const feedbackId = pathParts[pathParts.length - 2]; // Get the ID from the path
 
+    // Validate the feedback ID
+    if (
+      !feedbackId ||
+      typeof feedbackId !== "string" ||
+      feedbackId.trim() === ""
+    ) {
+      return NextResponse.json(
+        { error: "Invalid feedback ID" },
+        { status: 400 },
+      );
+    }
+
     if (!feedbackId) {
       return NextResponse.json(
         { error: "Feedback ID is required" },

@@ -36,8 +36,31 @@ export function FeedbackLeaderboard({
   const [userUpvotes, setUserUpvotes] = useState<string[]>(initialUserUpvotes);
   const [isLoading, setIsLoading] = useState(true);
   const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+    {
+      cookies: {
+        get(name) {
+          const cookies = document.cookie.split("; ");
+          const cookie = cookies.find((c) => c.startsWith(`${name}=`));
+          return cookie ? cookie.split("=")[1] : undefined;
+        },
+        set(name, value, options) {
+          let cookie = `${name}=${value}`;
+          if (options?.expires)
+            cookie += `; expires=${options.expires.toUTCString()}`;
+          if (options?.path) cookie += `; path=${options.path}`;
+          if (options?.domain) cookie += `; domain=${options.domain}`;
+          if (options?.sameSite) cookie += `; samesite=${options.sameSite}`;
+          if (options?.secure) cookie += `; secure`;
+          document.cookie = cookie;
+        },
+        remove(name, options) {
+          const newOptions = { ...options, expires: new Date(0) };
+          this.set(name, "", newOptions);
+        },
+      },
+    },
   );
 
   // Fetch feedback data

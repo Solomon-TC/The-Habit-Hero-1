@@ -14,14 +14,27 @@ export async function GET(request: NextRequest) {
       {
         cookies: {
           async get(name) {
-            const cookie = await cookieStore.get(name);
-            return cookie?.value;
+            try {
+              const cookie = await cookieStore.get(name);
+              return cookie?.value;
+            } catch (error) {
+              console.error("Error getting cookie:", error);
+              return undefined;
+            }
           },
           async set(name, value, options) {
-            await cookieStore.set({ name, value, ...options });
+            try {
+              await cookieStore.set({ name, value, ...options });
+            } catch (error) {
+              console.error("Error setting cookie:", error);
+            }
           },
           async remove(name, options) {
-            await cookieStore.set({ name, value: "", ...options });
+            try {
+              await cookieStore.set({ name, value: "", ...options });
+            } catch (error) {
+              console.error("Error removing cookie:", error);
+            }
           },
         },
       },

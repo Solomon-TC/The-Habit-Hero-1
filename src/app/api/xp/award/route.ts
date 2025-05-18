@@ -5,7 +5,19 @@ import { awardXP } from "@/lib/xp";
 
 export async function POST(request: NextRequest) {
   try {
-    const { userId, amount, reason, sourceId } = await request.json();
+    let userId, amount, reason, sourceId;
+    try {
+      const body = await request.json();
+      userId = body.userId;
+      amount = body.amount;
+      reason = body.reason;
+      sourceId = body.sourceId;
+    } catch (error) {
+      return NextResponse.json(
+        { error: "Invalid request body" },
+        { status: 400 },
+      );
+    }
 
     if (!userId || !amount || !reason) {
       return NextResponse.json(

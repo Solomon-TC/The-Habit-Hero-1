@@ -16,11 +16,17 @@ function encodedRedirect(
 
 // Create a reusable function for Supabase client initialization
 const createSupabaseClient = async () => {
-  const cookieStore = await cookies();
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-    {
+  try {
+    const cookieStore = await cookies();
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("Missing Supabase environment variables");
+      throw new Error("Missing Supabase environment variables");
+    }
+
+    return createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         async get(name) {
           try {
@@ -46,8 +52,11 @@ const createSupabaseClient = async () => {
           }
         },
       },
-    },
-  );
+    });
+  } catch (error) {
+    console.error("Error creating Supabase client:", error);
+    throw new Error("Failed to initialize authentication client");
+  }
 };
 
 export async function signInAction(formData: FormData) {

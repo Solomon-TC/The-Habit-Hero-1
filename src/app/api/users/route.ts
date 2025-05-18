@@ -36,17 +36,29 @@ export async function GET(request: NextRequest) {
     const serviceClient = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL || "",
       process.env.SUPABASE_SERVICE_KEY || "",
-
       {
         cookies: {
           get(name: string) {
-            return cookieStore.get(name)?.value;
+            try {
+              return cookieStore.get(name)?.value;
+            } catch (error) {
+              console.error("Error getting cookie:", error);
+              return undefined;
+            }
           },
           set(name: string, value: string, options: any) {
-            cookieStore.set({ name, value, ...options });
+            try {
+              cookieStore.set({ name, value, ...options });
+            } catch (error) {
+              console.error("Error setting cookie:", error);
+            }
           },
           remove(name: string, options: any) {
-            cookieStore.set({ name, value: "", ...options });
+            try {
+              cookieStore.set({ name, value: "", ...options });
+            } catch (error) {
+              console.error("Error removing cookie:", error);
+            }
           },
         },
       },

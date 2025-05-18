@@ -7,6 +7,14 @@ export async function POST(request: NextRequest) {
     const requestId = formData.get("requestId")?.toString();
     const accept = formData.get("accept") === "true";
 
+    // Validate the request ID
+    if (!requestId || requestId.trim() === "") {
+      return NextResponse.json(
+        { error: "Invalid request ID" },
+        { status: 400 },
+      );
+    }
+
     if (!requestId) {
       return NextResponse.json(
         { error: "Request ID is required" },

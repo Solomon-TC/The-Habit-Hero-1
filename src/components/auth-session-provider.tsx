@@ -127,9 +127,11 @@ export function AuthSessionProvider({ children }: { children: ReactNode }) {
       // If we were previously authenticated but now we're not, and there are no errors,
       // this might be a temporary network issue - don't update state
       if (isAuthenticated && !authStatus && !errors) {
-        console.warn(
-          "Session refresh failed but no errors reported - might be temporary",
-        );
+        if (process.env.NODE_ENV !== "production") {
+          console.warn(
+            "Session refresh failed but no errors reported - might be temporary",
+          );
+        }
         return true; // Return true to prevent logout on temporary issues
       }
 

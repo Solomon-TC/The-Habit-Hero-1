@@ -230,9 +230,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Filter out current user for search results
-    const filteredUsers = allUsersRaw.filter(
-      (user) => user.id !== currentUser.user.id,
-    );
+    const filteredUsers = allUsersRaw
+      ? allUsersRaw.filter((user) => user.id !== currentUser.user.id)
+      : [];
 
     // 1. Exact match with eq
     const exactMatch = filteredUsers.filter(
