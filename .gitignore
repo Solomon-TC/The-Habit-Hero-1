@@ -44,6 +44,13 @@ next-env.d.ts
 **/tempobook/dynamic/
 **/tempobook/storyboards/
 
+# Local environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
 # Build output
 .vercel
 .turbo

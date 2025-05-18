@@ -18,8 +18,9 @@ const nextConfig = {
   // No need for explicit favicon configuration with files in public directory
   assetPrefix: "",
   poweredByHeader: false,
-  // Ensure tempo-devtools is properly transpiled
-  transpilePackages: ["tempo-devtools"],
+  // Ensure tempo-devtools and other packages are properly transpiled
+  transpilePackages: ["tempo-devtools", "@supabase/ssr"],
+  swcMinify: false,
   // Disable webpack persistent caching to prevent file system errors
   webpack: (config, { dev }) => {
     if (dev) {

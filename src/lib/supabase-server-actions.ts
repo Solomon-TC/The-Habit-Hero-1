@@ -13,7 +13,12 @@ export const createServerSupabaseClient = async () => {
       // Dynamic import to avoid client-side import of next/headers
       const { cookies } = await import("next/headers");
       // Store cookies() in a variable and await it before using
-      cookieStore = await cookies();
+      try {
+        cookieStore = await cookies();
+      } catch (error) {
+        console.error("Error getting cookies:", error);
+        return null;
+      }
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

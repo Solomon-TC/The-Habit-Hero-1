@@ -34,7 +34,7 @@ export async function createServerSupabaseClient() {
         },
         async remove(name, options) {
           try {
-            await (await cookieStore).set({ name, value: "", ...options });
+            await cookieStore.set({ name, value: "", ...options });
           } catch (error) {
             console.error("Error removing cookie:", error);
           }

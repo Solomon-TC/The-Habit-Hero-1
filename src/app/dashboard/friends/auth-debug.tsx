@@ -40,7 +40,10 @@ export default function AuthDebug() {
     setAuthState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       // Check Supabase auth
-      const supabase = createClientComponentClient();
+      const supabase = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+      );
       const { data, error } = await supabase.auth.getUser();
 
       // Check cookies
