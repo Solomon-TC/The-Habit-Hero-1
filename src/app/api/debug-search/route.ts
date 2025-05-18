@@ -287,7 +287,7 @@ export async function GET(request: NextRequest) {
     results.allUsers = {
       data: formattedAllUsers,
       error: null,
-      count: allUsersRaw.length,
+      count: allUsersRaw ? allUsersRaw.length : 0,
     };
 
     // 5. Try the RPC function

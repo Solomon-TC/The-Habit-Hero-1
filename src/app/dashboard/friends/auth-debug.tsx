@@ -28,12 +28,12 @@ export default function AuthDebug() {
     return () => clearInterval(debugInterval);
   }, []);
   const [authState, setAuthState] = useState({
-    userId: null,
-    email: null,
+    userId: null as string | null,
+    email: null as string | null,
     loading: true,
-    error: null,
-    cookies: [],
-    localStorage: [],
+    error: null as string | null,
+    cookies: [] as string[],
+    localStorage: [] as string[],
   });
 
   const checkAuth = async () => {
@@ -47,7 +47,7 @@ export default function AuthDebug() {
       const { data, error } = await supabase.auth.getUser();
 
       // Check cookies
-      let cookies = [];
+      let cookies: string[] = [];
       try {
         cookies = document.cookie.split(";").map((c) => c.trim());
       } catch (e) {
@@ -55,7 +55,7 @@ export default function AuthDebug() {
       }
 
       // Check localStorage
-      let localStorageItems = [];
+      let localStorageItems: string[] = [];
       try {
         for (let i = 0; i < localStorage.length; i++) {
           const key = localStorage.key(i);
