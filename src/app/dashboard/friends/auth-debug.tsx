@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/supabase-js";
+import { createClientComponentClient } from "@supabase/ssr";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 
