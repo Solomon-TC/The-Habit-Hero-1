@@ -29,8 +29,8 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const query = url.searchParams.get("query");
 
-    // Get cookies
-    const cookieStore = cookies();
+    // Get cookies - must await the cookies() function as it returns a Promise in Next.js 14+
+    const cookieStore = await cookies();
 
     // Create a client with service role key for maximum access
     const serviceClient = createServerClient(
