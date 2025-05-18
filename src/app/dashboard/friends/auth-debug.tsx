@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createClientComponentClient } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 
