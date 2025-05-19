@@ -26,6 +26,8 @@ import LevelProgress from "@/components/level-progress";
 import { ClientMilestoneForm } from "./client-milestone-form";
 import { ClientHabitCard } from "./client-habit-card";
 
+export const dynamic = "force-dynamic";
+
 export default async function Dashboard() {
   const supabase = await createServerSupabaseClient();
 

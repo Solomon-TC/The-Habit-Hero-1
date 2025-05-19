@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { UserCircle } from "lucide-react";
 import DashboardNavbar from "@/components/dashboard-navbar";
 
+export const dynamic = "force-dynamic";
+
 export default async function ProfilePage() {
   const supabase = await createServerSupabaseClient();
 

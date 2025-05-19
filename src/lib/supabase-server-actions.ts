@@ -17,6 +17,9 @@ export const createServerSupabaseClient = async () => {
         cookieStore = await cookies();
       } catch (error) {
         console.error("Error getting cookies:", error);
+        if (error.message?.includes("Dynamic Server Usage")) {
+          throw new Error(`Dynamic server usage detected: ${error.message}`);
+        }
         return null;
       }
 

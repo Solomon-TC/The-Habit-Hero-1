@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { SubscriptionCheck } from "@/components/subscription-check";
 import { UserSettingsForm } from "@/components/user-settings-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function SettingsPage() {
   const supabase = await createServerSupabaseClient();
 

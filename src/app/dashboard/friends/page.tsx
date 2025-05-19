@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { Users } from "lucide-react";
 import FriendActions from "@/components/friends/friend-actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function FriendsPage() {
   // Check authentication
   const supabase = await createServerSupabaseClient();

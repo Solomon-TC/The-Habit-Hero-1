@@ -9,24 +9,31 @@ interface GoalSummaryProps {
 }
 
 export default function GoalSummary({ goals }: GoalSummaryProps) {
+  // Create a consistent reference to the goals array
+  const goalsArray = goals || [];
+
   // Calculate summary statistics
-  const totalGoals = goals.length;
-  const completedGoals = goals.filter((goal) => goal.progress === 100).length;
-  const inProgressGoals = goals.filter(
+  const totalGoals = goalsArray.length;
+  const completedGoals = goalsArray.filter(
+    (goal) => goal.progress === 100,
+  ).length;
+  const inProgressGoals = goalsArray.filter(
     (goal) => goal.progress > 0 && goal.progress < 100,
   ).length;
-  const notStartedGoals = goals.filter((goal) => goal.progress === 0).length;
+  const notStartedGoals = goalsArray.filter(
+    (goal) => goal.progress === 0,
+  ).length;
 
   // Calculate average progress
   const averageProgress =
     totalGoals > 0
       ? Math.round(
-          goals.reduce((sum, goal) => sum + goal.progress, 0) / totalGoals,
+          goalsArray.reduce((sum, goal) => sum + goal.progress, 0) / totalGoals,
         )
       : 0;
 
   // Get upcoming milestones
-  const allMilestones = goals.flatMap((goal) =>
+  const allMilestones = goalsArray.flatMap((goal) =>
     (goal.milestones || []).map((milestone) => ({
       ...milestone,
       goalTitle: goal.title,

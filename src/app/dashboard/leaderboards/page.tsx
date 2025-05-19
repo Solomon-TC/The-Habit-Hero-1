@@ -2,6 +2,8 @@ import { GlobalLeaderboard } from "./global-leaderboard";
 import { FriendsLeaderboard } from "./friends-leaderboard";
 import DashboardNavbar from "@/components/dashboard-navbar";
 
+export const dynamic = "force-dynamic";
+
 export default function LeaderboardsPage() {
   return (
     <>

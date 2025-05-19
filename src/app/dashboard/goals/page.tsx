@@ -7,6 +7,8 @@ import GoalSummary from "@/components/goal-summary";
 import { getUserGoals } from "@/lib/goals";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+export const dynamic = "force-dynamic";
+
 export default async function GoalsPage() {
   const supabase = await createServerSupabaseClient();
 

@@ -7,6 +7,9 @@ interface SubscriptionCheckProps {
   redirectTo?: string;
 }
 
+// Force dynamic rendering for components that use this
+export const dynamic = "force-dynamic";
+
 export async function SubscriptionCheck({
   children,
   redirectTo = "/pricing",
