@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
 import { createClientComponentClient } from "@supabase/ssr";
 import {
