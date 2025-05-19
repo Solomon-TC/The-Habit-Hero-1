@@ -101,6 +101,13 @@ export default function CancelSubscriptionPage() {
     setError(null);
 
     try {
+      // Make sure Supabase client is initialized
+      if (!supabase) {
+        throw new Error(
+          "Supabase client is not initialized. Please try again.",
+        );
+      }
+
       console.log("🔄 Starting subscription cancellation process...");
 
       // First check if we already have authentication from the global provider
