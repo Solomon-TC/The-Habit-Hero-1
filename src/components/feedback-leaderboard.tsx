@@ -41,11 +41,13 @@ export function FeedbackLeaderboard({
     {
       cookies: {
         get(name) {
+          if (typeof window === "undefined") return undefined;
           const cookies = document.cookie.split("; ");
           const cookie = cookies.find((c) => c.startsWith(`${name}=`));
           return cookie ? cookie.split("=")[1] : undefined;
         },
         set(name, value, options) {
+          if (typeof window === "undefined") return;
           let cookie = `${name}=${value}`;
           if (options?.expires)
             cookie += `; expires=${options.expires.toUTCString()}`;
@@ -56,6 +58,7 @@ export function FeedbackLeaderboard({
           document.cookie = cookie;
         },
         remove(name, options) {
+          if (typeof window === "undefined") return;
           const newOptions = { ...options, expires: new Date(0) };
           this.set(name, "", newOptions);
         },
