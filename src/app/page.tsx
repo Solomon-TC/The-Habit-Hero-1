@@ -29,9 +29,14 @@ export default async function Home() {
 
   // Handle case when supabase client is null (during build)
   let user = null;
-  if (supabase) {
-    const { data } = await supabase.auth.getUser();
-    user = data.user;
+  try {
+    if (supabase) {
+      const { data } = await supabase.auth.getUser();
+      user = data.user;
+    }
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    // Continue with null user
   }
 
   // Define default plans

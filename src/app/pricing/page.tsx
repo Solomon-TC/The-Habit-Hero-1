@@ -20,13 +20,62 @@ export default async function Pricing() {
     // Continue with null user
   }
 
-  // Fetch plans from edge function
-  const { data: plans, error } = await supabase.functions.invoke(
-    "supabase-functions-get-plans",
+  // Define default plans for when Supabase client is null (during build)
+  let plans = [
     {
-      method: "GET",
+      id: "price_basic",
+      name: "Basic",
+      amount: 0,
+      interval: "month",
+      popular: false,
+      features: ["Track up to 5 habits", "Basic statistics", "7-day streaks"],
     },
-  );
+    {
+      id: "price_premium",
+      name: "Premium",
+      amount: 999,
+      interval: "month",
+      popular: true,
+      features: [
+        "Unlimited habits",
+        "Advanced analytics",
+        "Unlimited streaks",
+        "Priority support",
+      ],
+    },
+    {
+      id: "price_pro",
+      name: "Pro",
+      amount: 1999,
+      interval: "month",
+      popular: false,
+      features: [
+        "Everything in Premium",
+        "Team challenges",
+        "API access",
+        "Custom badges",
+      ],
+    },
+  ];
+
+  // Only fetch plans from edge function if Supabase client is available
+  try {
+    if (supabase) {
+      const { data: fetchedPlans, error } = await supabase.functions.invoke(
+        "supabase-functions-get-plans",
+        {
+          method: "GET",
+        },
+      );
+
+      if (fetchedPlans && !error) {
+        plans = fetchedPlans;
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching plans:", error);
+    // Continue with default plans
+  }
   return (
     <>
       <Navbar />
