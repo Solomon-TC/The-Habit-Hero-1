@@ -23,39 +23,44 @@ import { useAuthSession } from "@/components/auth-session-provider";
 
 export default function CancelSubscriptionPage() {
   const router = useRouter();
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
-    {
-      cookies: {
-        get(name) {
-          if (typeof document === "undefined") return undefined;
-          const cookies = document.cookie.split("; ");
-          const cookie = cookies.find((c) => c.startsWith(`${name}=`));
-          return cookie ? cookie.split("=")[1] : undefined;
-        },
-        set(name, value, options) {
-          if (typeof document === "undefined") return;
-          let cookie = `${name}=${value}`;
-          if (options?.expires)
-            cookie += `; expires=${options.expires.toUTCString()}`;
-          if (options?.path) cookie += `; path=${options.path}`;
-          if (options?.domain) cookie += `; domain=${options.domain}`;
-          if (options?.sameSite) cookie += `; samesite=${options.sameSite}`;
-          if (options?.secure) cookie += `; secure`;
-          document.cookie = cookie;
-        },
-        remove(name, options) {
-          if (typeof document === "undefined") return;
-          const newOptions = { ...options, expires: new Date(0) };
-          this.set(name, "", newOptions);
-        },
-      },
-    },
-  );
+  const [supabase, setSupabase] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessionRefreshAttempted, setSessionRefreshAttempted] = useState(false);
+
+  // Initialize Supabase client only on the client side
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const client = createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
+        {
+          cookies: {
+            get(name) {
+              const cookies = document.cookie.split("; ");
+              const cookie = cookies.find((c) => c.startsWith(`${name}=`));
+              return cookie ? cookie.split("=")[1] : undefined;
+            },
+            set(name, value, options) {
+              let cookie = `${name}=${value}`;
+              if (options?.expires)
+                cookie += `; expires=${options.expires.toUTCString()}`;
+              if (options?.path) cookie += `; path=${options.path}`;
+              if (options?.domain) cookie += `; domain=${options.domain}`;
+              if (options?.sameSite) cookie += `; samesite=${options.sameSite}`;
+              if (options?.secure) cookie += `; secure`;
+              document.cookie = cookie;
+            },
+            remove(name, options) {
+              const newOptions = { ...options, expires: new Date(0) };
+              this.set(name, "", newOptions);
+            },
+          },
+        },
+      );
+      setSupabase(client);
+    }
+  }, []);
 
   // Use the global auth session
   const { isAuthenticated, user, accessToken, refreshSession } =
