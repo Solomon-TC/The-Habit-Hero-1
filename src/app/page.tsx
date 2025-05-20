@@ -35,6 +35,7 @@ export default async function Home() {
   // Ensure we have a fallback if supabase is null
   if (!supabase) {
     console.log("Supabase client is null, using default data");
+    // No need to fetch user data when supabase is null
   }
 
   const plans = [

@@ -4,14 +4,26 @@ import { createServerClient } from "@supabase/ssr";
 
 export async function createServerSupabaseClient() {
   try {
-    // Skip client creation during static build phase or when cookies are not available
+    // Skip client creation during static build phase, prerendering, or when cookies are not available
     if (
       process.env.NEXT_PHASE === "phase-production-build" ||
       (typeof window === "undefined" &&
         process.env.NODE_ENV === "production") ||
-      process.env.NEXT_RUNTIME === "edge"
+      process.env.NEXT_RUNTIME === "edge" ||
+      // Additional check for prerendering context
+      global.isPrerendering
     ) {
-      console.log("Skipping Supabase client creation during static build");
+      console.log(
+        "Skipping Supabase client creation during static build or prerendering",
+      );
+      return null;
+    }
+
+    try {
+      const cookieStore = await cookies();
+    } catch (error) {
+      console.log("Cookies not available, likely during prerendering");
+      global.isPrerendering = true;
       return null;
     }
 
