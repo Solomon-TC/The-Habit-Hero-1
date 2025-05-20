@@ -28,6 +28,11 @@ export default async function Home() {
   } = (await supabase?.auth.getUser()) || { data: { user: null } };
 
   // Define default plans
+  // Ensure we have a fallback if supabase is null
+  if (!supabase) {
+    console.log("Supabase client is null, using default data");
+  }
+
   const plans = [
     {
       id: "price_basic",

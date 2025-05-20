@@ -5,7 +5,10 @@ import { createServerClient } from "@supabase/ssr";
 export async function createServerSupabaseClient() {
   try {
     // Skip client creation during static build phase
-    if (process.env.NEXT_PHASE === "phase-production-build") {
+    if (
+      process.env.NEXT_PHASE === "phase-production-build" ||
+      (typeof window === "undefined" && process.env.NODE_ENV === "production")
+    ) {
       console.log("Skipping Supabase client creation during static build");
       return null;
     }
