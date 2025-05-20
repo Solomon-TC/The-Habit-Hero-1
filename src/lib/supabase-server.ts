@@ -4,6 +4,12 @@ import { createServerClient } from "@supabase/ssr";
 
 export async function createServerSupabaseClient() {
   try {
+    // Skip client creation during static build phase
+    if (process.env.NEXT_PHASE === "phase-production-build") {
+      console.log("Skipping Supabase client creation during static build");
+      return null;
+    }
+
     const cookieStore = await cookies();
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;

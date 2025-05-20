@@ -18,11 +18,14 @@ import FeatureTabs from "@/components/feature-tabs";
 import TestimonialCarousel from "@/components/testimonial-carousel";
 import CtaSection from "@/components/cta-section";
 
+// Import dynamic config to prevent static optimization
+import "./config";
+
 export default async function Home() {
   const supabase = await createServerSupabaseClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = (await supabase?.auth.getUser()) || { data: { user: null } };
 
   // Define default plans
   const plans = [
