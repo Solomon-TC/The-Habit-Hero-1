@@ -4,9 +4,18 @@ import { createClient } from "@/utils/supabase-server";
 
 export default async function Pricing() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+
+  // Handle case when supabase client is null (during build)
+  let user = null;
+  try {
+    if (supabase) {
+      const { data } = await supabase.auth.getUser();
+      user = data.user;
+    }
+  } catch (error) {
+    console.error("Error fetching user in pricing page:", error);
+    // Continue with null user
+  }
 
   // Fetch plans from edge function
   const { data: plans, error } = await supabase.functions.invoke(
