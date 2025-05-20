@@ -20,7 +20,29 @@ export const createServerSupabaseClient = async () => {
         if (error.message?.includes("Dynamic Server Usage")) {
           throw new Error(`Dynamic server usage detected: ${error.message}`);
         }
-        return null;
+        return {
+          auth: {
+            getUser: async () => ({ data: { user: null } }),
+            getSession: async () => ({ data: { session: null } }),
+          },
+          from: () => ({
+            select: () => ({
+              eq: () => ({
+                single: async () => ({ data: null }),
+                maybeSingle: async () => ({ data: null }),
+                limit: () => ({ data: [] }),
+                order: () => ({ data: [] }),
+                data: [],
+              }),
+              order: () => ({ data: [] }),
+              limit: () => ({ data: [] }),
+              data: [],
+            }),
+          }),
+          functions: {
+            invoke: async () => ({ data: null }),
+          },
+        };
       }
 
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -28,7 +50,29 @@ export const createServerSupabaseClient = async () => {
 
       if (!supabaseUrl || !supabaseAnonKey) {
         console.error("Missing Supabase environment variables");
-        return null;
+        return {
+          auth: {
+            getUser: async () => ({ data: { user: null } }),
+            getSession: async () => ({ data: { session: null } }),
+          },
+          from: () => ({
+            select: () => ({
+              eq: () => ({
+                single: async () => ({ data: null }),
+                maybeSingle: async () => ({ data: null }),
+                limit: () => ({ data: [] }),
+                order: () => ({ data: [] }),
+                data: [],
+              }),
+              order: () => ({ data: [] }),
+              limit: () => ({ data: [] }),
+              data: [],
+            }),
+          }),
+          functions: {
+            invoke: async () => ({ data: null }),
+          },
+        };
       }
 
       return createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -61,7 +105,29 @@ export const createServerSupabaseClient = async () => {
       });
     } catch (error) {
       console.error("Error creating server Supabase client:", error);
-      return null;
+      return {
+        auth: {
+          getUser: async () => ({ data: { user: null } }),
+          getSession: async () => ({ data: { session: null } }),
+        },
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              single: async () => ({ data: null }),
+              maybeSingle: async () => ({ data: null }),
+              limit: () => ({ data: [] }),
+              order: () => ({ data: [] }),
+              data: [],
+            }),
+            order: () => ({ data: [] }),
+            limit: () => ({ data: [] }),
+            data: [],
+          }),
+        }),
+        functions: {
+          invoke: async () => ({ data: null }),
+        },
+      };
     }
   } else {
     // Client-side implementation
@@ -75,7 +141,29 @@ export const createServerSupabaseClient = async () => {
 
       if (!supabaseUrl || !supabaseAnonKey) {
         console.error("Missing Supabase environment variables");
-        return null;
+        return {
+          auth: {
+            getUser: async () => ({ data: { user: null } }),
+            getSession: async () => ({ data: { session: null } }),
+          },
+          from: () => ({
+            select: () => ({
+              eq: () => ({
+                single: async () => ({ data: null }),
+                maybeSingle: async () => ({ data: null }),
+                limit: () => ({ data: [] }),
+                order: () => ({ data: [] }),
+                data: [],
+              }),
+              order: () => ({ data: [] }),
+              limit: () => ({ data: [] }),
+              data: [],
+            }),
+          }),
+          functions: {
+            invoke: async () => ({ data: null }),
+          },
+        };
       }
 
       return createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -121,7 +209,29 @@ export const createServerSupabaseClient = async () => {
       });
     } catch (error) {
       console.error("Error creating client-side Supabase client:", error);
-      return null;
+      return {
+        auth: {
+          getUser: async () => ({ data: { user: null } }),
+          getSession: async () => ({ data: { session: null } }),
+        },
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              single: async () => ({ data: null }),
+              maybeSingle: async () => ({ data: null }),
+              limit: () => ({ data: [] }),
+              order: () => ({ data: [] }),
+              data: [],
+            }),
+            order: () => ({ data: [] }),
+            limit: () => ({ data: [] }),
+            data: [],
+          }),
+        }),
+        functions: {
+          invoke: async () => ({ data: null }),
+        },
+      };
     }
   }
 };
@@ -135,7 +245,29 @@ export const createServiceRoleClient = () => {
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error("Missing Supabase service role environment variables");
-      return null;
+      return {
+        auth: {
+          getUser: async () => ({ data: { user: null } }),
+          getSession: async () => ({ data: { session: null } }),
+        },
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              single: async () => ({ data: null }),
+              maybeSingle: async () => ({ data: null }),
+              limit: () => ({ data: [] }),
+              order: () => ({ data: [] }),
+              data: [],
+            }),
+            order: () => ({ data: [] }),
+            limit: () => ({ data: [] }),
+            data: [],
+          }),
+        }),
+        functions: {
+          invoke: async () => ({ data: null }),
+        },
+      };
     }
 
     return createClient(supabaseUrl, supabaseServiceKey, {
@@ -146,6 +278,28 @@ export const createServiceRoleClient = () => {
     });
   } catch (error) {
     console.error("Error creating service role client:", error);
-    return null;
+    return {
+      auth: {
+        getUser: async () => ({ data: { user: null } }),
+        getSession: async () => ({ data: { session: null } }),
+      },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null }),
+            maybeSingle: async () => ({ data: null }),
+            limit: () => ({ data: [] }),
+            order: () => ({ data: [] }),
+            data: [],
+          }),
+          order: () => ({ data: [] }),
+          limit: () => ({ data: [] }),
+          data: [],
+        }),
+      }),
+      functions: {
+        invoke: async () => ({ data: null }),
+      },
+    };
   }
 };

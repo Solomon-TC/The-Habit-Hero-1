@@ -11,10 +11,8 @@ export default async function Pricing() {
   // Handle case when supabase client is null (during build)
   let user = null;
   try {
-    if (supabase && typeof supabase.auth !== "undefined") {
-      const { data } = await supabase.auth.getUser();
-      user = data.user;
-    }
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
   } catch (error) {
     console.error("Error fetching user in pricing page:", error);
     // Continue with null user

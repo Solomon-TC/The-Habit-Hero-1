@@ -13,7 +13,8 @@ export async function createServerSupabaseClient() {
     if (
       process.env.NEXT_PHASE === "phase-production-build" ||
       (typeof window === "undefined" &&
-        process.env.NODE_ENV === "production") ||
+        process.env.NODE_ENV === "production" &&
+        !process.env.NEXT_PUBLIC_SUPABASE_URL) ||
       process.env.NEXT_RUNTIME === "edge" ||
       // Additional check for prerendering context
       global.isPrerendering
@@ -21,7 +22,29 @@ export async function createServerSupabaseClient() {
       console.log(
         "Skipping Supabase client creation during static build or prerendering",
       );
-      return null;
+      return {
+        auth: {
+          getUser: async () => ({ data: { user: null } }),
+          getSession: async () => ({ data: { session: null } }),
+        },
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              single: async () => ({ data: null }),
+              maybeSingle: async () => ({ data: null }),
+              limit: () => ({ data: [] }),
+              order: () => ({ data: [] }),
+              data: [],
+            }),
+            order: () => ({ data: [] }),
+            limit: () => ({ data: [] }),
+            data: [],
+          }),
+        }),
+        functions: {
+          invoke: async () => ({ data: null }),
+        },
+      };
     }
 
     let cookieStore;
@@ -30,7 +53,29 @@ export async function createServerSupabaseClient() {
     } catch (error) {
       console.log("Cookies not available, likely during prerendering");
       global.isPrerendering = true;
-      return null;
+      return {
+        auth: {
+          getUser: async () => ({ data: { user: null } }),
+          getSession: async () => ({ data: { session: null } }),
+        },
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              single: async () => ({ data: null }),
+              maybeSingle: async () => ({ data: null }),
+              limit: () => ({ data: [] }),
+              order: () => ({ data: [] }),
+              data: [],
+            }),
+            order: () => ({ data: [] }),
+            limit: () => ({ data: [] }),
+            data: [],
+          }),
+        }),
+        functions: {
+          invoke: async () => ({ data: null }),
+        },
+      };
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -38,7 +83,29 @@ export async function createServerSupabaseClient() {
 
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error("Missing Supabase environment variables");
-      return null;
+      return {
+        auth: {
+          getUser: async () => ({ data: { user: null } }),
+          getSession: async () => ({ data: { session: null } }),
+        },
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              single: async () => ({ data: null }),
+              maybeSingle: async () => ({ data: null }),
+              limit: () => ({ data: [] }),
+              order: () => ({ data: [] }),
+              data: [],
+            }),
+            order: () => ({ data: [] }),
+            limit: () => ({ data: [] }),
+            data: [],
+          }),
+        }),
+        functions: {
+          invoke: async () => ({ data: null }),
+        },
+      };
     }
 
     return createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -70,7 +137,29 @@ export async function createServerSupabaseClient() {
     });
   } catch (error) {
     console.error("Error creating server Supabase client:", error);
-    return null;
+    return {
+      auth: {
+        getUser: async () => ({ data: { user: null } }),
+        getSession: async () => ({ data: { session: null } }),
+      },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null }),
+            maybeSingle: async () => ({ data: null }),
+            limit: () => ({ data: [] }),
+            order: () => ({ data: [] }),
+            data: [],
+          }),
+          order: () => ({ data: [] }),
+          limit: () => ({ data: [] }),
+          data: [],
+        }),
+      }),
+      functions: {
+        invoke: async () => ({ data: null }),
+      },
+    };
   }
 }
 
