@@ -4,10 +4,12 @@ import { createServerClient } from "@supabase/ssr";
 
 export async function createServerSupabaseClient() {
   try {
-    // Skip client creation during static build phase
+    // Skip client creation during static build phase or when cookies are not available
     if (
       process.env.NEXT_PHASE === "phase-production-build" ||
-      (typeof window === "undefined" && process.env.NODE_ENV === "production")
+      (typeof window === "undefined" &&
+        process.env.NODE_ENV === "production") ||
+      process.env.NEXT_RUNTIME === "edge"
     ) {
       console.log("Skipping Supabase client creation during static build");
       return null;

@@ -23,9 +23,13 @@ import "./config";
 
 export default async function Home() {
   const supabase = await createServerSupabaseClient();
-  const {
-    data: { user },
-  } = (await supabase?.auth.getUser()) || { data: { user: null } };
+
+  // Handle case when supabase client is null (during build)
+  let user = null;
+  if (supabase) {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  }
 
   // Define default plans
   // Ensure we have a fallback if supabase is null
