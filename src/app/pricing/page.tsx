@@ -2,6 +2,9 @@ import Navbar from "@/components/navbar";
 import PricingCard from "@/components/pricing-card";
 import { createClient } from "@/utils/supabase-server";
 
+// Force dynamic rendering to prevent prerendering issues
+export const dynamic = "force-dynamic";
+
 export default async function Pricing() {
   const supabase = await createClient();
 
