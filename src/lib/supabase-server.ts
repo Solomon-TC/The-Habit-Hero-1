@@ -166,14 +166,76 @@ export async function createServerSupabaseClient() {
 export function createServiceRoleClient() {
   if (!process.env.SUPABASE_SERVICE_KEY) {
     console.error("SUPABASE_SERVICE_KEY is not defined");
-    return null;
+    return {
+      auth: {
+        getUser: async () => ({ data: { user: null } }),
+        getSession: async () => ({ data: { session: null } }),
+      },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null }),
+            maybeSingle: async () => ({ data: null }),
+            limit: () => ({ data: [] }),
+            order: () => ({ data: [] }),
+            data: [],
+            eq: () => ({
+              single: async () => ({ data: null }),
+              maybeSingle: async () => ({ data: null }),
+              limit: () => ({ data: [] }),
+              order: () => ({ data: [] }),
+              gte: () => ({ data: [] }),
+              data: [],
+            }),
+            gte: () => ({ data: [] }),
+          }),
+          order: () => ({ data: [] }),
+          limit: () => ({ data: [] }),
+          data: [],
+        }),
+      }),
+      functions: {
+        invoke: async () => ({ data: null }),
+      },
+    };
   }
 
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     if (!supabaseUrl) {
       console.error("NEXT_PUBLIC_SUPABASE_URL is not defined");
-      return null;
+      return {
+        auth: {
+          getUser: async () => ({ data: { user: null } }),
+          getSession: async () => ({ data: { session: null } }),
+        },
+        from: () => ({
+          select: () => ({
+            eq: () => ({
+              single: async () => ({ data: null }),
+              maybeSingle: async () => ({ data: null }),
+              limit: () => ({ data: [] }),
+              order: () => ({ data: [] }),
+              data: [],
+              eq: () => ({
+                single: async () => ({ data: null }),
+                maybeSingle: async () => ({ data: null }),
+                limit: () => ({ data: [] }),
+                order: () => ({ data: [] }),
+                gte: () => ({ data: [] }),
+                data: [],
+              }),
+              gte: () => ({ data: [] }),
+            }),
+            order: () => ({ data: [] }),
+            limit: () => ({ data: [] }),
+            data: [],
+          }),
+        }),
+        functions: {
+          invoke: async () => ({ data: null }),
+        },
+      };
     }
 
     return createSupabaseClient(supabaseUrl, process.env.SUPABASE_SERVICE_KEY, {
@@ -184,7 +246,38 @@ export function createServiceRoleClient() {
     });
   } catch (error) {
     console.error("Error creating service role client:", error);
-    return null;
+    return {
+      auth: {
+        getUser: async () => ({ data: { user: null } }),
+        getSession: async () => ({ data: { session: null } }),
+      },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: async () => ({ data: null }),
+            maybeSingle: async () => ({ data: null }),
+            limit: () => ({ data: [] }),
+            order: () => ({ data: [] }),
+            data: [],
+            eq: () => ({
+              single: async () => ({ data: null }),
+              maybeSingle: async () => ({ data: null }),
+              limit: () => ({ data: [] }),
+              order: () => ({ data: [] }),
+              gte: () => ({ data: [] }),
+              data: [],
+            }),
+            gte: () => ({ data: [] }),
+          }),
+          order: () => ({ data: [] }),
+          limit: () => ({ data: [] }),
+          data: [],
+        }),
+      }),
+      functions: {
+        invoke: async () => ({ data: null }),
+      },
+    };
   }
 }
 
