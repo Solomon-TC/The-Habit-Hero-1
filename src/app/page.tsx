@@ -21,6 +21,9 @@ import CtaSection from "@/components/cta-section";
 // Import dynamic config to prevent static optimization
 import "./config";
 
+// Force dynamic rendering to prevent prerendering issues
+export const dynamic = "force-dynamic";
+
 export default async function Home() {
   const supabase = await createServerSupabaseClient();
 

@@ -2,6 +2,11 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 
+// Initialize global flag if it doesn't exist
+if (typeof global.isPrerendering === "undefined") {
+  global.isPrerendering = false;
+}
+
 export async function createServerSupabaseClient() {
   try {
     // Skip client creation during static build phase, prerendering, or when cookies are not available
@@ -19,15 +24,14 @@ export async function createServerSupabaseClient() {
       return null;
     }
 
+    let cookieStore;
     try {
-      const cookieStore = await cookies();
+      cookieStore = await cookies();
     } catch (error) {
       console.log("Cookies not available, likely during prerendering");
       global.isPrerendering = true;
       return null;
     }
-
-    const cookieStore = await cookies();
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
