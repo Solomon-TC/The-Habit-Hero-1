@@ -11,7 +11,7 @@ function encodedRedirect(
 ) {
   const searchParams = new URLSearchParams();
   searchParams.set(type, message);
-  return redirect(`${redirectTo || ""}?${searchParams.toString()}`);
+  return redirect(`${redirectTo || "/sign-in"}?${searchParams.toString()}`);
 }
 
 // Create a reusable function for Supabase client initialization
