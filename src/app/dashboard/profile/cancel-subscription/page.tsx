@@ -104,7 +104,7 @@ export default function CancelSubscriptionPage() {
       // Make sure Supabase client is initialized
       if (!supabase) {
         throw new Error(
-          "Supabase client is not initialized. Please try again.",
+          "Supabase client is not initialized. Please refresh the page and try again.",
         );
       }
 
